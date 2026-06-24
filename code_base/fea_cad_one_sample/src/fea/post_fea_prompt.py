@@ -88,11 +88,11 @@ def _load_manual_report(report_path: Path) -> dict[str, Any]:
 def _render_post_fea_prompt(sample_id: str, load_case: LoadCase, report: dict[str, Any]) -> str:
     """Render the post-FEA refinement prompt."""
 
-    max_von_mises_pa = _require_value(report, "max_von_mises_pa")
-    max_displacement_mm = _require_value(report, "max_displacement_mm")
-    computed_safety_factor = _require_value(report, "computed_safety_factor")
-    stress_hotspot_description = _require_value(report, "stress_hotspot_description")
-    overall_pass = _require_value(report, "overall_pass")
+    max_von_mises_pa = _format_value(report, "max_von_mises_pa")
+    max_displacement_mm = _format_value(report, "max_displacement_mm")
+    computed_safety_factor = _format_value(report, "computed_safety_factor")
+    stress_hotspot_description = _format_value(report, "stress_hotspot_description")
+    overall_pass = _format_value(report, "overall_pass")
 
     return "\n".join(
         [
@@ -149,12 +149,12 @@ def _render_post_fea_prompt(sample_id: str, load_case: LoadCase, report: dict[st
     )
 
 
-def _require_value(report: dict[str, Any], key: str) -> Any:
-    """Require a populated value from the manual FEA report."""
+def _format_value(report: dict[str, Any], key: str) -> Any:
+    """Format a manual FEA report value or return a placeholder."""
 
     value = report.get(key)
     if value in (None, ""):
-        raise ValueError(f"manual FEA report is missing required field: {key}")
+        return "<pending>"
     return value
 
 

@@ -213,11 +213,11 @@ def _render_post_fea_comparison_report(sample_id: str, load_case: LoadCase, repo
 def _render_report_summary(report: Mapping[str, Any]) -> str:
     """Render the manual FEA report summary section."""
 
-    max_von_mises_pa = _require_report_value(report, "max_von_mises_pa")
-    max_displacement_mm = _require_report_value(report, "max_displacement_mm")
-    computed_safety_factor = _require_report_value(report, "computed_safety_factor")
-    stress_hotspot_description = _require_report_value(report, "stress_hotspot_description")
-    overall_pass = _require_report_value(report, "overall_pass")
+    max_von_mises_pa = _format_report_value(report, "max_von_mises_pa")
+    max_displacement_mm = _format_report_value(report, "max_displacement_mm")
+    computed_safety_factor = _format_report_value(report, "computed_safety_factor")
+    stress_hotspot_description = _format_report_value(report, "stress_hotspot_description")
+    overall_pass = _format_report_value(report, "overall_pass")
     solver = str(report.get("solver") or "FreeCAD FEM + CalculiX").strip()
     lines = [
         f"- Solver: {solver}",
@@ -255,12 +255,12 @@ def _render_load_case_summary(load_case: LoadCase) -> str:
     )
 
 
-def _require_report_value(report: Mapping[str, Any], key: str) -> Any:
-    """Require a populated value from a manual FEA report mapping."""
+def _format_report_value(report: Mapping[str, Any], key: str) -> Any:
+    """Format a manual FEA report value or return a placeholder."""
 
     value = report.get(key)
     if value in (None, ""):
-        raise ValueError(f"manual FEA report is missing required field: {key}")
+        return "<pending>"
     return value
 
 

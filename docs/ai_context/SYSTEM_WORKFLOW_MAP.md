@@ -8,7 +8,9 @@ This workflow is the first project step toward physics-aware CAD generation. It 
 
 ```mermaid
 flowchart LR
-    A[Start CLI] --> B[Load config]
+    A[Start CLI] --> A1[Parse command in src/main.py]
+    A1 --> A2[Dispatch through src/runners.py]
+    A2 --> B[Load config]
     B --> C[Inspect DB schema]
     C --> D[Load expert prompt sample]
     D --> E[Generate baseline CadQuery code]
@@ -23,7 +25,7 @@ flowchart LR
     M --> N[Write FreeCAD FEM instructions]
     N --> O[Write fea_report.json template]
     O --> P[Write post-FEA refinement prompt]
-    P --> Q[Write run_manifest.json]
+    P --> Q[Update run_manifest.json incrementally]
     Q --> R[Print output summary]
 
     C -->|schema missing expert prompt| S[Stop with readable DB error]
@@ -54,6 +56,6 @@ flowchart LR
 - STEP is the primary engineering handoff format.
 - STL is for rendering and mesh preview.
 - FreeCAD and CalculiX are manual only in v1.
-- Each automated stage must write a status entry into `run_manifest.json`.
+- Each automated stage must write or update a status entry in `run_manifest.json`.
 - Each CAD execution stage must write `execution_log.txt`.
 - Documentation updates are part of the workflow; Pi must keep `DOC_TAXONOMY.md`, `CODEBASE_MAP.md`, `SYSTEM_WORKFLOW_MAP.md`, module README, and `docs/session_state.md` current as implementation proceeds.

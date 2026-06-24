@@ -6,6 +6,8 @@ import json
 from dataclasses import asdict
 from pathlib import Path
 
+import pytest
+
 from src.fea.write_load_case import MAX_VON_MISES_PA, write_load_case
 from src.schemas.fea import LoadCase
 
@@ -55,3 +57,16 @@ def test_write_load_case_writes_expected_defaults(tmp_path: Path) -> None:
     assert MAX_VON_MISES_PA == 138_000_000
     assert output_path.exists()
     assert json.loads(output_path.read_text(encoding="utf-8")) == asdict(expected)
+
+
+
+def test_write_load_case_refuses_to_overwrite_without_force(tmp_path: Path) -> None:
+    """write_load_case preserves existing JSON unless force=True."""
+
+    output_path = tmp_path / "load_case.json"
+    output_path.write_text("keep-me", encoding="utf-8")
+
+    with pytest.raises(FileExistsError, match="force=True"):
+        write_load_case("sample-001", output_path, force=False)
+
+    assert output_path.read_text(encoding="utf-8") == "keep-me"

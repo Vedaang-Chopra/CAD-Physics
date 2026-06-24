@@ -2,11 +2,11 @@
 
 ## Purpose
 
-One-sample CADCodeVerify-to-FEA workflow that loads a single sample and prepares baseline, FEA-ready, and manual-FEA artifacts.
+One-sample CADCodeVerify-to-FEA workflow that loads a single sample, exposes a public runner/interface layer, and prepares baseline, FEA-ready, manual-FEA, and post-FEA artifacts.
 
 ## What Belongs Here
 
-- Module-specific CLI entry points, orchestration, schemas, DB loading, CAD execution/export, rendering, FEA artifacts, and comparison reports.
+- Module-specific CLI entry points, public interfaces, runner wrappers, orchestration, schemas, DB loading, CAD execution/export, rendering, FEA artifacts, and comparison reports.
 - Copied reference helpers preserved under `src/copied_from_cadcodeverify/`.
 
 ## What Does NOT Belong Here
@@ -20,19 +20,27 @@ One-sample CADCodeVerify-to-FEA workflow that loads a single sample and prepares
 ```mermaid
 flowchart TD
     N[notebooks/] --> I[src/interfaces.py]
-    I --> R[src/runners.py]
-    R --> O[src/orchestration/pipeline.py]
-    O --> D[src/db/]
-    O --> C[src/cad/]
-    O --> P[src/prompts/]
-    O --> V[src/visualization/]
-    O --> F[src/fea/]
-    O --> M[src/reports/]
-    D --> S[src/schemas/]
+    I --> C[src/cad/]
+    I --> D[src/db/]
+    I --> P[src/prompts/]
+    I --> V[src/visualization/]
+    I --> F[src/fea/]
+    I --> M[src/reports/]
+    I --> S[src/schemas/]
+    R[src/runners.py] --> O[src/orchestration/pipeline.py]
+    O --> M2[src/orchestration/manifest.py]
+    O --> D
+    O --> C
+    O --> P
+    O --> V
+    O --> F
+    O --> M
+    D --> S
     C --> S
     P --> S
     F --> S
     M --> S
+    M2 --> S
 ```
 
 ## Entry Points
@@ -46,6 +54,8 @@ flowchart TD
 ## How to Run
 
 - **CLI:** `python -m src.main --help`
+- **Inspect schema:** `python -m src.main inspect-schema --config config_gpt_5_4_mini.yaml`
+- **Full run:** `python -m src.main run --expert-random --config config_gpt_5_4_mini.yaml`
 - **Tests:** `pytest tests -q`
 
 ## Internal Structure
@@ -53,7 +63,7 @@ flowchart TD
 | Directory / File | Responsibility |
 |---|---|
 | `src/schemas/` | Data contracts |
-| `src/orchestration/` | Workflow composition |
+| `src/orchestration/` | Workflow composition and run-manifest persistence |
 | `src/db/` | Schema inspection and sample loading |
 | `src/cad/` | CadQuery execution and export |
 | `src/prompts/` | FEA prompt construction |

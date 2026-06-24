@@ -158,6 +158,28 @@ def test_write_post_fea_prompt_writes_feedback_prompt_and_comparison(tmp_path: P
     assert "What Changed Because of Physics Feedback" in comparison_text
 
 
+def test_write_post_fea_prompt_handles_pending_values(tmp_path: Path) -> None:
+    """write_post_fea_prompt can produce placeholder text when the manual report is blank."""
+
+    output_dir = tmp_path / "05_post_fea_refinement"
+    report_path = tmp_path / "fea_report.json"
+    write_manual_fea_report_template("sample-001", report_path)
+
+    result = write_post_fea_prompt(
+        sample_id="sample-001",
+        load_case=_sample_load_case(),
+        report_path=report_path,
+        output_dir=output_dir,
+    )
+
+    feedback_text = (output_dir / "fea_feedback_prompt.txt").read_text(encoding="utf-8")
+    comparison_text = (output_dir / "comparison_after_fea.md").read_text(encoding="utf-8")
+
+    assert result["fea_feedback_prompt_path"].endswith("fea_feedback_prompt.txt")
+    assert "<pending>" in feedback_text
+    assert "<pending>" in comparison_text
+
+
 def test_write_post_fea_prompt_refuses_to_overwrite_without_force(tmp_path: Path) -> None:
     """write_post_fea_prompt preserves existing outputs unless force=True."""
 

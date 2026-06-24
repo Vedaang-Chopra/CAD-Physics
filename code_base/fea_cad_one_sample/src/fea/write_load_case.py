@@ -22,15 +22,18 @@ REQUIRED_SAFETY_FACTOR = 2.0
 MAX_VON_MISES_PA = int(YIELD_STRENGTH_PA / REQUIRED_SAFETY_FACTOR)
 
 
-def write_load_case(sample_id: str, output_path: Path) -> LoadCase:
+def write_load_case(sample_id: str, output_path: Path, force: bool = False) -> LoadCase:
     """Write the default FEA load case JSON for one sample."""
 
     logger.info(
-        "write_load_case | start | sample_id=%s | output_path=%s",
+        "write_load_case | start | sample_id=%s | output_path=%s | force=%s",
         sample_id,
         output_path,
+        force,
     )
     try:
+        output_path = Path(output_path)
+        _ensure_can_write(output_path, force=force)
         load_case = LoadCase(
             sample_id=sample_id,
             units="mm",
@@ -76,8 +79,18 @@ def write_load_case(sample_id: str, output_path: Path) -> LoadCase:
         return load_case
     except Exception:
         logger.exception(
-            "write_load_case | failed | sample_id=%s | output_path=%s",
+            "write_load_case | failed | sample_id=%s | output_path=%s | force=%s",
             sample_id,
             output_path,
+            force,
         )
         raise
+
+
+def _ensure_can_write(output_path: Path, *, force: bool) -> None:
+    """Refuse to overwrite the load-case JSON unless force is enabled."""
+
+    if force:
+        return
+    if output_path.exists():
+        raise FileExistsError(f"Existing load case found at {output_path}. Use force=True to overwrite.")

@@ -9,6 +9,14 @@ from typing import Any, Literal
 
 logger = logging.getLogger(__name__)
 
+RUN_MANIFEST_ALLOWED_STATUSES: tuple[str, ...] = (
+    "pending",
+    "running",
+    "passed",
+    "failed",
+    "skipped",
+)
+
 
 @dataclass(slots=True)
 class PipelineSummary:

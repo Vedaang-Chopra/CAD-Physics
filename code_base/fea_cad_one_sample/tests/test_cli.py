@@ -78,3 +78,95 @@ def test_inspect_schema_cli_passes_force_through(
     assert exit_code == 0
     assert captured["config_name"] == "config_gpt_5_4_mini.yaml"
     assert captured["force"] is True
+
+
+def test_inspect_schema_cli_rejects_sample_selection_flags(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """inspect-schema rejects sample-selection flags before running."""
+
+    exit_code = main([
+        "inspect-schema",
+        "--config",
+        "config_gpt_5_4_mini.yaml",
+        "--sample-id",
+        "sample-001",
+    ])
+
+    output = capsys.readouterr()
+    assert exit_code == 1
+    assert "does not accept sample-selection flags" in output.err
+
+
+def test_build_freecad_instructions_cli_passes_force_through(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The CLI forwards --force to write commands that create artifacts."""
+
+    captured: dict[str, object] = {}
+
+    def fake_runner(config_name: str, sample_id: str, force: bool) -> dict[str, str]:
+        captured["config_name"] = config_name
+        captured["sample_id"] = sample_id
+        captured["force"] = force
+        return {"freecad_instructions_path": "/tmp/freecad_instructions.md"}
+
+    monkeypatch.setattr("src.main.runners.build_freecad_instructions_only_runner", fake_runner)
+
+    exit_code = main([
+        "build-freecad-instructions",
+        "--config",
+        "config_gpt_5_4_mini.yaml",
+        "--sample-id",
+        "sample-001",
+        "--force",
+    ])
+
+    assert exit_code == 0
+    assert captured["config_name"] == "config_gpt_5_4_mini.yaml"
+    assert captured["sample_id"] == "sample-001"
+    assert captured["force"] is True
+
+
+def test_run_cli_rejects_missing_selection_flags(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """run rejects missing sample-selection flags before pipeline execution."""
+
+    exit_code = main([
+        "run",
+        "--config",
+        "config_gpt_5_4_mini.yaml",
+    ])
+
+    output = capsys.readouterr()
+    assert exit_code == 1
+    assert "requires exactly one" in output.err
+
+
+def test_run_cli_rejects_conflicting_selection_flags(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """run rejects conflicting sample-selection flags before pipeline execution."""
+
+    exit_code = main([
+        "run",
+        "--config",
+        "config_gpt_5_4_mini.yaml",
+        "--sample-id",
+        "sample-001",
+        "--random",
+    ])
+
+    output = capsys.readouterr()
+    assert exit_code == 1
+    assert "requires exactly one" in output.err
+
+
+def test_cli_help_exits_zero(capsys: pytest.CaptureFixture[str]) -> None:
+    """--help exits cleanly."""
+
+    exit_code = main(["--help"])
+    output = capsys.readouterr()
+    assert exit_code == 0
+    assert "One-sample CAD-to-FEA prototype CLI." in output.out

@@ -3,7 +3,7 @@
 **Spec:** `docs/execution-plans/01-basic-sample-fea-confirmed-spec.md`  
 **Architecture:** `docs/execution-plans/02-basic-sample-fea-architecture.md`  
 **Status:** In Progress
-**Current Phase:** 10
+**Current Phase:** 12
 
 ## Rules For Pi
 
@@ -973,7 +973,7 @@
 **Required skills:** `design-runner`, `add-observability`, `write-tests`, `verify-checkpoint`.  
 **Depends on:** Phase 10 checkpoint.
 
-- [ ] **Task 11.1 — Implement public runners**
+- [x] **Task 11.1 — Implement public runners**
   - File:
 
     ```text
@@ -999,7 +999,7 @@
     /opt/homebrew/Caskroom/miniconda/base/envs/cad_physics/bin/python -m pytest tests/test_cli.py -q
     ```
 
-- [ ] **Task 11.2 — Implement public interfaces module**
+- [x] **Task 11.2 — Implement public interfaces module**
   - File:
 
     ```text
@@ -1040,7 +1040,7 @@
     /opt/homebrew/Caskroom/miniconda/base/envs/cad_physics/bin/python -m pytest tests/test_interfaces.py -q
     ```
 
-- [ ] **Task 11.3 — Implement run manifest writer**
+- [x] **Task 11.3 — Implement run manifest writer**
   - Files:
 
     ```text
@@ -1082,7 +1082,7 @@
     /opt/homebrew/Caskroom/miniconda/base/envs/cad_physics/bin/python -m pytest tests/test_run_manifest.py -q
     ```
 
-- [ ] **Task 11.4 — Implement pipeline orchestration**
+- [x] **Task 11.4 — Implement pipeline orchestration**
   - File:
 
     ```text
@@ -1112,7 +1112,7 @@
     /opt/homebrew/Caskroom/miniconda/base/envs/cad_physics/bin/python -m pytest tests/test_cli.py -q
     ```
 
-- [ ] **Task 11.5 — Implement CLI**
+- [x] **Task 11.5 — Implement CLI**
   - File:
 
     ```text
@@ -1153,14 +1153,14 @@
 
 ### Checkpoint 11
 
-- [ ] CLI tests pass.
-- [ ] Interface import tests pass.
-- [ ] Run manifest tests pass.
-- [ ] `python -m src.main --help` exits 0.
-- [ ] `--force` is accepted by relevant write commands.
-- [ ] `run_manifest.json` is written with stage statuses and artifact paths.
-- [ ] With env vars set, `run --expert-random` creates a full sample output workspace.
-- [ ] `docs/session_state.md` records Phase 11 status.
+- [x] CLI tests pass.
+- [x] Interface import tests pass.
+- [x] Run manifest tests pass.
+- [x] `python -m src.main --help` exits 0.
+- [x] `--force` is accepted by relevant write commands.
+- [x] `run_manifest.json` is written with stage statuses and artifact paths.
+- [x] With env vars set, `run --expert-random` creates a full sample output workspace.
+- [x] `docs/session_state.md` records Phase 11 status.
 
 ---
 
