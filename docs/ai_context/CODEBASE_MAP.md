@@ -4,7 +4,7 @@
 
 ## Current State
 
-CAD-Physics now has a created `code_base/fea_cad_one_sample/` module skeleton with README, packaging files, and the `src/` directory layout. Phase 11 has added the public interface surface, thin runner layer, run-manifest writer, pipeline orchestration, and CLI commands on top of the manual FreeCAD FEM and post-FEA artifact writers.
+CAD-Physics now has a created `code_base/fea_cad_one_sample/` module skeleton with README, packaging files, the `src/` directory layout, and the Phase 12 inspection notebook. Phase 11 has added the public interface surface, thin runner layer, run-manifest writer, pipeline orchestration, and CLI commands on top of the manual FreeCAD FEM and post-FEA artifact writers.
 
 The main intent is captured in `conversations/01-start.md`: move CADCodeVerify from geometry-only CAD toward physics-aware CAD by preparing a STEP-first, manual-FEA-ready workflow with structured load cases and feedback artifacts.
 
@@ -73,6 +73,7 @@ CAD-Physics/
 | `fea_cad_one_sample` | `src/interfaces.py` | Public re-export surface for schema types and stable functions |
 | `fea_cad_one_sample` | `src/runners.py` | Thin public runner functions for schema, pipeline, and artifact stages |
 | `fea_cad_one_sample` | `src/main.py` | CLI entry point for inspect-schema, run, render-only, build-fea-prompt, build-freecad-instructions, and compare |
+| `fea_cad_one_sample` | `notebooks/one_sample_fea_inspection.ipynb` | Public inspection notebook that exercises `src.interfaces` only |
 
 ## Schemas And Data Contracts
 
@@ -97,8 +98,8 @@ CAD-Physics/
 
 | Module | Public Files | Notes |
 |---|---|---|
-| `fea_cad_one_sample` | `interfaces.py`, `runners.py`, `main.py` | Skeleton in place; functional APIs pending Phase 5+ |
-| `fea_cad_one_sample` | `schemas/`, `orchestration/`, `db/`, `cad/`, `prompts/`, `visualization/`, `fea/`, `reports/`, `copied_from_cadcodeverify/` | Directory ownership established; Phase 11 now includes `src/orchestration/manifest.py`, `src/orchestration/pipeline.py`, `src/interfaces.py`, `src/runners.py`, `src/main.py`, and the Phase 10 FEA artifact writers |
+| `fea_cad_one_sample` | `interfaces.py`, `runners.py`, `main.py`, `notebooks/one_sample_fea_inspection.ipynb` | Public surface and inspection notebook in place |
+| `fea_cad_one_sample` | `schemas/`, `orchestration/`, `db/`, `cad/`, `prompts/`, `visualization/`, `fea/`, `reports/`, `copied_from_cadcodeverify/` | Directory ownership established; Phase 12 now includes the inspection notebook plus the Phase 11 public APIs, orchestration, and CLI |
 
 ## Known Gaps / Technical Debt
 

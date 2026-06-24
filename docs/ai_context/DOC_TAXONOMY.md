@@ -46,6 +46,7 @@ If lower-authority docs disagree with higher-authority docs, Pi must update the 
 | `docs/ai_context/` | Agent-facing maps and documentation taxonomy | Update whenever structure, workflow, or doc authority changes |
 | `docs/session_state.md` | Active progress tracker | Update after every phase, every checkpoint, and before stopping |
 | `code_base/fea_cad_one_sample/README.md` | Module-facing human and agent guide | Create/update with module implementation |
+| `code_base/fea_cad_one_sample/notebooks/one_sample_fea_inspection.ipynb` | Public inspection notebook | Keep public-only imports and temporary artifacts |
 
 ## Required Documentation Updates During Implementation
 
@@ -90,3 +91,4 @@ Pi must preserve these project constraints:
 | Date | Change |
 |---|---|
 | 2026-06-24 | Created documentation taxonomy and authority rules for CAD-Physics execution. |
+| 2026-06-24 | Added inspection-notebook ownership guidance and current module-doc alignment rules. |

@@ -1200,7 +1200,7 @@
     rg -n "flowchart TD|python -m src.main|interfaces.py|runners.py" code_base/fea_cad_one_sample/README.md
     ```
 
-- [ ] **Task 12.3 — Update agent maps**
+- [x] **Task 12.3 — Update agent maps**
   - Files:
 
     ```text

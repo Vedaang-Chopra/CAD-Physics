@@ -34,6 +34,20 @@ flowchart LR
     K -->|FEA-ready export fails| V[Write execution_log.txt]
 ```
 
+## Notebook Inspection Flow
+
+```mermaid
+flowchart LR
+    A[Open notebook] --> B[Import public src.interfaces only]
+    B --> C[Build temp SQLite sample]
+    C --> D[Inspect schema and sample]
+    D --> E[Write temp artifacts]
+    E --> F[Print notebook summary]
+```
+
+- The inspection notebook must stay read-only with respect to source files.
+- Temporary artifacts should live outside `code_base/fea_cad_one_sample/`.
+
 ## Manual FreeCAD FEM Flow
 
 ```mermaid

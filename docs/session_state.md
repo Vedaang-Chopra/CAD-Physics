@@ -16,7 +16,7 @@
 
 **Phase:** 12 — Notebook And Documentation
 **Phase status:** In Progress
-**Current task:** Task 12.2 — Update module README
+**Current task:** Task 12.3 — Update agent maps
 
 ## Completed Tasks
 
@@ -323,14 +323,18 @@
 - Next task:
   - Task 6.2 — Implement baseline execution/export wrapper
 
-## Task 12.2 Result
+## Task 12.3 Result
 
 - Files modified:
-  - `code_base/fea_cad_one_sample/README.md`
+  - `docs/ai_context/DOC_TAXONOMY.md`
+  - `docs/ai_context/CODEBASE_MAP.md`
+  - `docs/ai_context/SYSTEM_WORKFLOW_MAP.md`
   - `docs/session_state.md`
-- Verify command:
-  - `rg -n "flowchart TD|python -m src.main|interfaces.py|runners.py" code_base/fea_cad_one_sample/README.md`
+- Verify commands:
+  - `rg -n "Documentation Authority Order|Documentation Verification Rules|Main Intent Guardrails" docs/ai_context/DOC_TAXONOMY.md`
+  - `rg -n "fea_cad_one_sample|run_full_pipeline|CADSample|LoadCase" docs/ai_context/CODEBASE_MAP.md`
+  - `rg -n "Load expert prompt|Generate baseline|FreeCAD" docs/ai_context/SYSTEM_WORKFLOW_MAP.md`
 - Result:
-  - PASS (README now reflects the notebook, entry points, and current run commands)
+  - PASS (agent maps now mention the inspection notebook and current workflow state)
 - Next task:
-  - Task 12.3 — Update agent maps
+  - Task 12.4 — Final tracking update
