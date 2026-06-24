@@ -39,14 +39,14 @@ flowchart LR
 ```mermaid
 flowchart LR
     A[Open notebook] --> B[Import public src.interfaces only]
-    B --> C[Build temp SQLite sample]
-    C --> D[Inspect schema and sample]
-    D --> E[Write temp artifacts]
+    B --> C[Connect to CAD Design DB]
+    C --> D[Inspect schema and load sample]
+    D --> E[Write module-local artifacts]
     E --> F[Print notebook summary]
 ```
 
 - The inspection notebook must stay read-only with respect to source files.
-- Temporary artifacts should live outside `code_base/fea_cad_one_sample/`.
+- Temporary artifacts should live under `code_base/fea_cad_one_sample/outputs/`.
 
 ## Manual FreeCAD FEM Flow
 
