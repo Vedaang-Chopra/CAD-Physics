@@ -1217,7 +1217,7 @@
     rg -n "Load expert prompt|Generate baseline|FreeCAD" docs/ai_context/SYSTEM_WORKFLOW_MAP.md
     ```
 
-- [ ] **Task 12.4 — Final tracking update**
+- [x] **Task 12.4 — Final tracking update**
   - File:
 
     ```text
@@ -1233,26 +1233,26 @@
 
 ### Final Checkpoint
 
-- [ ] Full tests pass:
+- [x] Full tests pass:
 
   ```bash
   cd code_base/fea_cad_one_sample
   /opt/homebrew/Caskroom/miniconda/base/envs/cad_physics/bin/python -m pytest tests -q
   ```
 
-- [ ] Compile check passes:
+- [x] Compile check passes:
 
   ```bash
   /opt/homebrew/Caskroom/miniconda/base/envs/cad_physics/bin/python -m compileall code_base/fea_cad_one_sample
   ```
 
-- [ ] Full pipeline command creates required workspace:
+- [x] Full pipeline command creates required workspace:
 
   ```bash
   cd code_base/fea_cad_one_sample
   /opt/homebrew/Caskroom/miniconda/base/envs/cad_physics/bin/python -m src.main run --expert-random --config config_gpt_5_4_mini.yaml
   ```
 
-- [ ] Docs reflect actual code.
-- [ ] Documentation verification commands in `docs/ai_context/DOC_TAXONOMY.md` pass.
-- [ ] `docs/session_state.md` records completion.
+- [x] Docs reflect actual code.
+- [x] Documentation verification commands in `docs/ai_context/DOC_TAXONOMY.md` pass.
+- [x] `docs/session_state.md` records completion.
