@@ -1,0 +1,1 @@
+"""Copied rendering helpers for the one-sample FEA prototype."""

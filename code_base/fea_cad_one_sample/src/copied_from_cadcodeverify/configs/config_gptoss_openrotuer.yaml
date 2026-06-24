@@ -1,0 +1,75 @@
+version: 2
+
+db:
+  connection_string: ${CAD_DB_CONNECTION_STRING}
+
+model:
+  id: "openai/gpt-oss-120b:free"
+  slug: "gpt_oss_120b"
+  provider: "openai"
+  connection_string: "https://openrouter.ai/api/v1"
+  api_key: ${OPENROUTER_API_KEY}
+
+generation:
+  temperature: 0.0
+  max_tokens: 3000
+  prompt_cache:
+    enabled: true
+    key: "cadcodeverify_codegen_v1"
+  batch:
+    enabled: true
+    completion_window: "24h"
+    poll_interval_seconds: 60
+  expert_instruction: |
+    You are a 3D modeling assistant with expertise in the CadQuery Python library.
+    You will be given a natural language description of a 3D object. Your task is to generate CadQuery code that constructs this object by reasoning step-by-step.
+  output_schema:
+    name: "cadquery_codegen"
+    schema:
+      type: "object"
+      additionalProperties: false
+      properties:
+        code_lines:
+          type: "array"
+          items:
+            type: "string"
+          minItems: 5
+      required: ["code_lines"]
+
+evaluation:
+  icp_iterations: 2000
+  icp_tolerance: 1.0e-6
+  point_sample_count: 8192
+  voxel_pitch: 0.05
+  f_score_threshold: 0.05
+  cross_section_slice_count: 15
+
+analysis:
+  classifier_model_name: "openai/gpt-oss-120b"
+  classifier_provider: "openai"
+  classifier_connection_string: "https://openrouter.ai/api/v1"
+  classifier_api_key: ${OPENROUTER_API_KEY}
+
+
+computation_graph:
+  model: "openai/gpt-oss-120b:free"
+  provider: "openai"
+  connection_string: "https://openrouter.ai/api/v1"
+  api_key: ${OPENROUTER_API_KEY}
+
+variants:
+  baseline:
+    generation_table: "model_generations"
+    model_name: "gpt_oss_120b"
+    pipeline_variant: "baseline"
+
+  rag:
+    enabled: true
+    generation_table: "model_generations"
+    model_name: "gpt_oss_120b"
+    pipeline_variant: "rag"
+    rag:
+      top_k_tutorial: 6
+      top_k_api: 6
+      max_context_tokens: 2500
+      docs_table: "cadquery_docs"

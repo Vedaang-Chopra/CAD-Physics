@@ -1,0 +1,1 @@
+"""Schema package for the one-sample FEA prototype."""
