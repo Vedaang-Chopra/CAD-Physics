@@ -4,7 +4,7 @@
 
 ## Current State
 
-CAD-Physics now has a created `code_base/fea_cad_one_sample/` module skeleton with README, packaging files, and the `src/` directory layout. Production behavior is still pending in later phases, but the ownership boundaries are now fixed.
+CAD-Physics now has a created `code_base/fea_cad_one_sample/` module skeleton with README, packaging files, and the `src/` directory layout. Phase 10 has added the manual FreeCAD FEM instruction writer, manual report template writer, and post-FEA comparison/prompt templating, while later CLI/orchestration phases remain pending.
 
 The main intent is captured in `conversations/01-start.md`: move CADCodeVerify from geometry-only CAD toward physics-aware CAD by preparing a STEP-first, manual-FEA-ready workflow with structured load cases and feedback artifacts.
 
@@ -96,11 +96,11 @@ CAD-Physics/
 | Module | Public Files | Notes |
 |---|---|---|
 | `fea_cad_one_sample` | `interfaces.py`, `runners.py`, `main.py` | Skeleton in place; functional APIs pending Phase 5+ |
-| `fea_cad_one_sample` | `schemas/`, `orchestration/`, `db/`, `cad/`, `prompts/`, `visualization/`, `fea/`, `reports/`, `copied_from_cadcodeverify/` | Directory ownership established |
+| `fea_cad_one_sample` | `schemas/`, `orchestration/`, `db/`, `cad/`, `prompts/`, `visualization/`, `fea/`, `reports/`, `copied_from_cadcodeverify/` | Directory ownership established; Phase 10 now includes `src/fea/freecad_manual_instructions.py`, `src/fea/manual_report.py`, `src/fea/post_fea_prompt.py`, and `src/reports/build_comparison_report.py` |
 
 ## Known Gaps / Technical Debt
 
-- Production logic is not implemented yet.
+- Core production logic for Phases 5-10 is now implemented; CLI/orchestration/public-interface wiring remains for later phases.
 - DB and model environment variables will be required in later phases.
 - Real DB schema must be inspected before assuming expert-prompt field names.
 - `cad_physics` exists now; the old gap note is resolved.

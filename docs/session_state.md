@@ -14,9 +14,9 @@
 
 ## Current Status
 
-**Phase:** 7 — FEA Prompt And Load Case
+**Phase:** 11 — CLI And Full Pipeline
 **Phase status:** Not Started
-**Current task:** Task 7.1 — Implement FEA prompt templates
+**Current task:** Task 11.1 — Implement public runners
 
 ## Completed Tasks
 
@@ -303,47 +303,200 @@
 - [x] Existing outputs are preserved unless `force=True`.
 - [x] `docs/session_state.md` records Phase 6 status.
 
-## Next Task
+## Task 7.1 Result
 
-- [ ] **Task 7.1 — Implement FEA prompt templates**
-  - File:
+- Files modified:
+  - `code_base/fea_cad_one_sample/src/prompts/prompt_templates.py`
+  - `code_base/fea_cad_one_sample/src/prompts/build_fea_prompt.py`
+  - `code_base/fea_cad_one_sample/tests/test_fea_prompt.py`
+  - `docs/session_state.md`
+- Verify command:
+  - `cd code_base/fea_cad_one_sample && /opt/homebrew/Caskroom/miniconda/base/envs/cad_physics/bin/python -m pytest tests/test_fea_prompt.py -q`
+- Result:
+  - PASS (1 passed)
+- Next task:
+  - Task 7.2 — Implement load case writer
 
-    ```text
-    src/prompts/prompt_templates.py
-    src/prompts/build_fea_prompt.py
-    ```
+## Task 7.2 Result
 
-  - Function:
+- Files modified:
+  - `code_base/fea_cad_one_sample/src/fea/write_load_case.py`
+  - `code_base/fea_cad_one_sample/tests/test_load_case.py`
+  - `docs/execution-plans/03-basic-sample-fea-pi-microtasks.md`
+  - `docs/session_state.md`
+- Verify command:
+  - `cd code_base/fea_cad_one_sample && /opt/homebrew/Caskroom/miniconda/base/envs/cad_physics/bin/python -m pytest tests/test_load_case.py -q`
+- Result:
+  - PASS (1 passed)
+- Next task:
+  - Phase 7 checkpoint — FEA Prompt And Load Case
 
-    ```python
-    build_fea_prompt(sample: CADSample, load_case: LoadCase) -> str
-    ```
+## Phase 7 Checkpoint Result
 
-  - Required prompt content:
-    - material,
-    - Young's modulus,
-    - Poisson's ratio,
-    - yield strength,
-    - fixed/support region,
-    - load region,
-    - force magnitude and direction,
-    - max displacement,
-    - safety factor,
-    - meshability,
-    - STEP export,
-    - single connected solid.
-  - Test file:
+- Files modified:
+  - `docs/session_state.md`
+  - `docs/execution-plans/03-basic-sample-fea-pi-microtasks.md`
+- Verify command:
+  - `cd code_base/fea_cad_one_sample && /opt/homebrew/Caskroom/miniconda/base/envs/cad_physics/bin/python -m pytest tests/test_fea_prompt.py tests/test_load_case.py -q && rg -n "Phase: 7|Task 7\\.2 Result|Phase 7 checkpoint" ../../docs/session_state.md`
+- Result:
+  - PASS (2 passed)
+- Next task:
+  - Task 8.1 — Implement FEA-ready generation wrapper
 
-    ```text
-    tests/test_fea_prompt.py
-    ```
+## Task 8.1 Result
 
-  - Verify:
+- Files created:
+  - `code_base/fea_cad_one_sample/src/cad/generate_fea_ready.py`
+  - `code_base/fea_cad_one_sample/tests/test_generate_fea_ready.py`
+- Files modified:
+  - `docs/execution-plans/03-basic-sample-fea-pi-microtasks.md`
+  - `docs/session_state.md`
+- Verify command:
+  - `cd code_base/fea_cad_one_sample && /opt/homebrew/Caskroom/miniconda/base/envs/cad_physics/bin/python -m pytest tests/test_generate_fea_ready.py -q`
+- Result:
+  - PASS (2 passed)
+- Next task:
+  - Task 8.2 — Reuse execution/export for FEA-ready geometry
 
-    ```bash
-    cd code_base/fea_cad_one_sample
-    /opt/homebrew/Caskroom/miniconda/base/envs/cad_physics/bin/python -m pytest tests/test_fea_prompt.py -q
-    ```
+## Task 8.2 Result
+
+- Files modified:
+  - `code_base/fea_cad_one_sample/src/cad/generate_fea_ready.py`
+  - `code_base/fea_cad_one_sample/tests/test_generate_fea_ready.py`
+  - `docs/execution-plans/03-basic-sample-fea-pi-microtasks.md`
+  - `docs/session_state.md`
+- Verify command:
+  - `cd code_base/fea_cad_one_sample && /opt/homebrew/Caskroom/miniconda/base/envs/cad_physics/bin/python -m pytest tests/test_generate_fea_ready.py -q`
+- Result:
+  - PASS (3 passed)
+- Next task:
+  - Phase 8 checkpoint — FEA-Ready CAD Generation
+
+## Phase 8 Checkpoint Result
+
+- Files modified:
+  - `docs/session_state.md`
+  - `docs/execution-plans/03-basic-sample-fea-pi-microtasks.md`
+- Verify command:
+  - `cd code_base/fea_cad_one_sample && /opt/homebrew/Caskroom/miniconda/base/envs/cad_physics/bin/python -m pytest tests/test_generate_fea_ready.py -q && rg -n "Phase: 8|Task 8\\.2 Result|Phase 8 checkpoint" ../../docs/session_state.md`
+- Result:
+  - PASS (3 passed)
+- Next task:
+  - Task 9.1 — Implement standard view rendering
+
+## Task 9.1 Result
+
+- Files created:
+  - `code_base/fea_cad_one_sample/src/visualization/render_views.py`
+  - `code_base/fea_cad_one_sample/tests/test_rendering.py`
+- Files modified:
+  - `docs/execution-plans/03-basic-sample-fea-pi-microtasks.md`
+  - `docs/session_state.md`
+- Verify command:
+  - `cd code_base/fea_cad_one_sample && /opt/homebrew/Caskroom/miniconda/base/envs/cad_physics/bin/python -m pytest tests/test_rendering.py -q`
+- Result:
+  - PASS (2 passed)
+- Next task:
+  - Task 9.2 — Implement side-by-side comparison
+
+## Task 9.2 Result
+
+- Files created:
+  - `code_base/fea_cad_one_sample/src/visualization/compare_views.py`
+- Files modified:
+  - `code_base/fea_cad_one_sample/tests/test_rendering.py`
+  - `docs/execution-plans/03-basic-sample-fea-pi-microtasks.md`
+  - `docs/session_state.md`
+- Verify command:
+  - `cd code_base/fea_cad_one_sample && /opt/homebrew/Caskroom/miniconda/base/envs/cad_physics/bin/python -m pytest tests/test_rendering.py -q`
+- Result:
+  - PASS (3 passed)
+- Next task:
+  - Task 9.3 — Implement markdown comparison reports
+
+## Task 9.3 Result
+
+- Files created:
+  - `code_base/fea_cad_one_sample/src/reports/build_comparison_report.py`
+  - `code_base/fea_cad_one_sample/tests/test_reports.py`
+- Files modified:
+  - `docs/execution-plans/03-basic-sample-fea-pi-microtasks.md`
+  - `docs/session_state.md`
+- Verify command:
+  - `cd code_base/fea_cad_one_sample && /opt/homebrew/Caskroom/miniconda/base/envs/cad_physics/bin/python -m pytest tests/test_reports.py -q`
+- Result:
+  - PASS (2 passed)
+- Next task:
+  - Phase 9 checkpoint — Rendering And Comparison
+
+## Phase 9 Checkpoint Result
+
+- Files modified:
+  - `docs/session_state.md`
+  - `docs/execution-plans/03-basic-sample-fea-pi-microtasks.md`
+- Verify command:
+  - `cd code_base/fea_cad_one_sample && /opt/homebrew/Caskroom/miniconda/base/envs/cad_physics/bin/python -m pytest tests/test_rendering.py tests/test_reports.py -q && rg -n "Phase: 9|Task 9\\.3 Result|Phase 9 checkpoint" ../../docs/session_state.md`
+- Result:
+  - PASS (5 passed)
+- Next task:
+  - Task 10.1 — Implement FreeCAD instructions writer
+
+## Task 10.1 Result
+
+- Files created:
+  - `code_base/fea_cad_one_sample/src/fea/freecad_manual_instructions.py`
+  - `code_base/fea_cad_one_sample/tests/test_freecad_manual.py`
+- Files modified:
+  - `docs/session_state.md`
+- Verify command:
+  - `cd code_base/fea_cad_one_sample && /opt/homebrew/Caskroom/miniconda/base/envs/cad_physics/bin/python -m pytest tests/test_freecad_manual.py -q`
+- Result:
+  - PASS (2 passed)
+- Next task:
+  - Task 10.2 — Implement manual FEA report template
+
+## Task 10.2 Result
+
+- Files created:
+  - `code_base/fea_cad_one_sample/src/fea/manual_report.py`
+  - `code_base/fea_cad_one_sample/tests/test_manual_fea_report.py`
+- Files modified:
+  - `docs/session_state.md`
+- Verify command:
+  - `cd code_base/fea_cad_one_sample && /opt/homebrew/Caskroom/miniconda/base/envs/cad_physics/bin/python -m pytest tests/test_manual_fea_report.py -q`
+- Result:
+  - PASS (2 passed)
+- Next task:
+  - Task 10.3 — Implement post-FEA prompt and final comparison template
+
+## Task 10.3 Result
+
+- Files created:
+  - `code_base/fea_cad_one_sample/src/fea/post_fea_prompt.py`
+- Files modified:
+  - `code_base/fea_cad_one_sample/src/reports/build_comparison_report.py`
+  - `code_base/fea_cad_one_sample/tests/test_manual_fea_report.py`
+  - `code_base/fea_cad_one_sample/tests/test_reports.py`
+  - `docs/session_state.md`
+- Verify command:
+  - `cd code_base/fea_cad_one_sample && /opt/homebrew/Caskroom/miniconda/base/envs/cad_physics/bin/python -m pytest tests/test_manual_fea_report.py tests/test_reports.py -q`
+- Result:
+  - PASS (7 passed)
+- Next task:
+  - Phase 10 checkpoint — Manual FreeCAD FEM Artifacts
+
+## Phase 10 Checkpoint Result
+
+- [x] FreeCAD manual tests pass.
+- [x] Manual FEA report tests pass.
+- [x] Artifact templates include required manual workflow text.
+- [x] `docs/session_state.md` records Phase 10 status.
+- Verify command:
+  - `cd code_base/fea_cad_one_sample && /opt/homebrew/Caskroom/miniconda/base/envs/cad_physics/bin/python -m pytest tests/test_freecad_manual.py tests/test_manual_fea_report.py tests/test_reports.py -q && rg -n "Open FreeCAD|The CAD design was tested using FreeCAD FEM \+ CalculiX|Post-FEA Comparison Template|What Changed Because of Physics Feedback" src/fea src/reports`
+- Result:
+  - PASS (9 passed)
+- Next task:
+  - Task 11.1 — Implement public runners
 
 ## Current Codebase State
 
@@ -354,8 +507,8 @@
 | `docs/ai_context/DOC_TAXONOMY.md` | Created | Defines documentation authority, update rules, verification rules, and main-intent guardrails |
 | `docs/ai_context/CODEBASE_MAP.md` | Modified | Now reflects the created module skeleton, module ownership, and placeholder entry points |
 | `docs/ai_context/SYSTEM_WORKFLOW_MAP.md` | Modified | Planned workflow map now includes main-intent and documentation-update rules |
-| `code_base/` | Existing empty directory | Implementation not started |
-| `code_base/fea_cad_one_sample/` | Created | README, pyproject, requirements, `src/` package stubs, schemas, `outputs/`, and `tests/` directories exist |
+| `code_base/` | Project root container | Hosts the standalone one-sample FEA prototype under `fea_cad_one_sample/` |
+| `code_base/fea_cad_one_sample/` | In progress | README, pyproject, requirements, `src/` packages, schemas, prompts, FEA load-case code, `outputs/`, and `tests/` directories exist |
 
 ## Decisions Made
 
@@ -383,7 +536,12 @@
 | `/opt/homebrew/Caskroom/miniconda/base/envs/cad_physics/bin/python -m compileall code_base/fea_cad_one_sample` | PASS | Compiled README, `src/` package stubs, and nested package files |
 | `cd code_base/fea_cad_one_sample && /opt/homebrew/Caskroom/miniconda/base/envs/cad_physics/bin/python -m pytest tests/test_schemas.py -q` | PASS | Schema dataclass tests passed (7 passed) |
 | `rg -n "flowchart TD|Entry Points|How to Run" code_base/fea_cad_one_sample/README.md` | PASS | README contains required section markers and Mermaid layer diagram |
-| `docs/ai_context/CODEBASE_MAP.md` rewrite | PASS | Updated module skeleton ownership, entry points, and current state |
+| `docs/ai_context/CODEBASE_MAP.md` rewrite | PASS | Updated module skeleton ownership, entry points, current state, and Phase 10 file inventory |
+| `cd code_base/fea_cad_one_sample && /opt/homebrew/Caskroom/miniconda/base/envs/cad_physics/bin/python -m pytest tests/test_freecad_manual.py -q` | PASS | Manual FreeCAD instruction writer tests passed (2 passed) |
+| `cd code_base/fea_cad_one_sample && /opt/homebrew/Caskroom/miniconda/base/envs/cad_physics/bin/python -m pytest tests/test_manual_fea_report.py -q` | PASS | Manual FEA report template tests passed (2 passed) |
+| `cd code_base/fea_cad_one_sample && /opt/homebrew/Caskroom/miniconda/base/envs/cad_physics/bin/python -m pytest tests/test_manual_fea_report.py tests/test_reports.py -q` | PASS | Post-FEA prompt and comparison template tests passed (7 passed) |
+| `cd code_base/fea_cad_one_sample && /opt/homebrew/Caskroom/miniconda/base/envs/cad_physics/bin/python -m pytest tests/test_freecad_manual.py tests/test_manual_fea_report.py tests/test_reports.py -q && rg -n "Open FreeCAD|The CAD design was tested using FreeCAD FEM \+ CalculiX|Post-FEA Comparison Template|What Changed Because of Physics Feedback" src/fea src/reports` | PASS | Phase 10 checkpoint verification passed (9 passed; required phrases found) |
+| `rg -n "manual FreeCAD FEM instructions|post-FEA comparison template|Phase 10 has added|Phase 11 — CLI And Full Pipeline" code_base/fea_cad_one_sample/README.md docs/ai_context/CODEBASE_MAP.md docs/session_state.md` | PASS | Confirmed Phase 10 docs and next-task handoff markers |
 
 ## Blockers
 
@@ -404,5 +562,5 @@ None — proceed to the next task.
 3. Read `docs/ai_context/DOC_TAXONOMY.md`.
 4. Read this file.
 5. Run the last passing checkpoint command again:
-   `/opt/homebrew/Caskroom/miniconda/base/envs/cad_physics/bin/python -m compileall code_base/fea_cad_one_sample`
-6. Start with Task 4.1 in `docs/execution-plans/03-basic-sample-fea-pi-microtasks.md`.
+   `cd code_base/fea_cad_one_sample && /opt/homebrew/Caskroom/miniconda/base/envs/cad_physics/bin/python -m pytest tests/test_freecad_manual.py tests/test_manual_fea_report.py tests/test_reports.py -q && rg -n "Open FreeCAD|The CAD design was tested using FreeCAD FEM \+ CalculiX|Post-FEA Comparison Template|What Changed Because of Physics Feedback" src/fea src/reports`
+6. Start with Task 11.1 in `docs/execution-plans/03-basic-sample-fea-pi-microtasks.md`.

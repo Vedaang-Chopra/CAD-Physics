@@ -2,8 +2,8 @@
 
 **Spec:** `docs/execution-plans/01-basic-sample-fea-confirmed-spec.md`  
 **Architecture:** `docs/execution-plans/02-basic-sample-fea-architecture.md`  
-**Status:** In Progress  
-**Current Phase:** 6  
+**Status:** In Progress
+**Current Phase:** 10
 
 ## Rules For Pi
 
@@ -585,7 +585,7 @@
 **Required skills:** `design-python-code`, `add-observability`, `write-tests`, `verify-checkpoint`.  
 **Depends on:** Phase 6 checkpoint.
 
-- [ ] **Task 7.1 — Implement FEA prompt templates**
+- [x] **Task 7.1 — Implement FEA prompt templates**
   - Files:
 
     ```text
@@ -625,7 +625,7 @@
     /opt/homebrew/Caskroom/miniconda/base/envs/cad_physics/bin/python -m pytest tests/test_fea_prompt.py -q
     ```
 
-- [ ] **Task 7.2 — Implement load case writer**
+- [x] **Task 7.2 — Implement load case writer**
   - File:
 
     ```text
@@ -657,10 +657,10 @@
 
 ### Checkpoint 7
 
-- [ ] FEA prompt tests pass.
-- [ ] Load case tests pass.
-- [ ] `max_von_mises_pa` is exactly `138000000`.
-- [ ] `docs/session_state.md` records Phase 7 status.
+- [x] FEA prompt tests pass.
+- [x] Load case tests pass.
+- [x] `max_von_mises_pa` is exactly `138000000`.
+- [x] `docs/session_state.md` records Phase 7 status.
 
 ---
 
@@ -670,7 +670,7 @@
 **Required skills:** `add-observability`, `write-tests`, `verify-checkpoint`.  
 **Depends on:** Phase 7 checkpoint.
 
-- [ ] **Task 8.1 — Implement FEA-ready generation wrapper**
+- [x] **Task 8.1 — Implement FEA-ready generation wrapper**
   - Files:
 
     ```text
@@ -702,7 +702,7 @@
     /opt/homebrew/Caskroom/miniconda/base/envs/cad_physics/bin/python -m pytest tests/test_generate_fea_ready.py -q
     ```
 
-- [ ] **Task 8.2 — Reuse execution/export for FEA-ready geometry**
+- [x] **Task 8.2 — Reuse execution/export for FEA-ready geometry**
   - Behavior:
     - Save `fea_ready.step`, `fea_ready.stl`, and `execution_log.txt`.
     - Preserve previous outputs on failure.
@@ -721,9 +721,9 @@
 
 ### Checkpoint 8
 
-- [ ] FEA-ready generation stage tests pass.
-- [ ] Failure path writes readable log and preserves prior outputs.
-- [ ] `docs/session_state.md` records Phase 8 status.
+- [x] FEA-ready generation stage tests pass.
+- [x] Failure path writes readable log and preserves prior outputs.
+- [x] `docs/session_state.md` records Phase 8 status.
 
 ---
 
@@ -733,7 +733,7 @@
 **Required skills:** `add-observability`, `write-tests`, `verify-checkpoint`.  
 **Depends on:** Phase 8 checkpoint.
 
-- [ ] **Task 9.1 — Implement standard view rendering**
+- [x] **Task 9.1 — Implement standard view rendering**
   - File:
 
     ```text
@@ -768,7 +768,7 @@
     /opt/homebrew/Caskroom/miniconda/base/envs/cad_physics/bin/python -m pytest tests/test_rendering.py -q
     ```
 
-- [ ] **Task 9.2 — Implement side-by-side comparison**
+- [x] **Task 9.2 — Implement side-by-side comparison**
   - File:
 
     ```text
@@ -800,7 +800,7 @@
     /opt/homebrew/Caskroom/miniconda/base/envs/cad_physics/bin/python -m pytest tests/test_rendering.py -q
     ```
 
-- [ ] **Task 9.3 — Implement markdown comparison reports**
+- [x] **Task 9.3 — Implement markdown comparison reports**
   - File:
 
     ```text
@@ -835,10 +835,10 @@
 
 ### Checkpoint 9
 
-- [ ] Rendering tests pass.
-- [ ] Report tests pass.
-- [ ] Required PNG and markdown artifacts are created in test temp dirs.
-- [ ] `docs/session_state.md` records Phase 9 status.
+- [x] Rendering tests pass.
+- [x] Report tests pass.
+- [x] Required PNG and markdown artifacts are created in test temp dirs.
+- [x] `docs/session_state.md` records Phase 9 status.
 
 ---
 
@@ -848,7 +848,7 @@
 **Required skills:** `add-observability`, `write-tests`, `verify-checkpoint`.  
 **Depends on:** Phase 9 checkpoint.
 
-- [ ] **Task 10.1 — Implement FreeCAD instructions writer**
+- [x] **Task 10.1 — Implement FreeCAD instructions writer**
   - File:
 
     ```text
@@ -891,7 +891,7 @@
     /opt/homebrew/Caskroom/miniconda/base/envs/cad_physics/bin/python -m pytest tests/test_freecad_manual.py -q
     ```
 
-- [ ] **Task 10.2 — Implement manual FEA report template**
+- [x] **Task 10.2 — Implement manual FEA report template**
   - File:
 
     ```text
@@ -923,7 +923,7 @@
     /opt/homebrew/Caskroom/miniconda/base/envs/cad_physics/bin/python -m pytest tests/test_manual_fea_report.py -q
     ```
 
-- [ ] **Task 10.3 — Implement post-FEA prompt and final comparison template**
+- [x] **Task 10.3 — Implement post-FEA prompt and final comparison template**
   - Files:
 
     ```text
@@ -960,10 +960,10 @@
 
 ### Checkpoint 10
 
-- [ ] FreeCAD manual tests pass.
-- [ ] Manual FEA report tests pass.
-- [ ] Artifact templates include required manual workflow text.
-- [ ] `docs/session_state.md` records Phase 10 status.
+- [x] FreeCAD manual tests pass.
+- [x] Manual FEA report tests pass.
+- [x] Artifact templates include required manual workflow text.
+- [x] `docs/session_state.md` records Phase 10 status.
 
 ---
 

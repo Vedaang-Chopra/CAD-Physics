@@ -2,7 +2,7 @@
 
 ## Purpose
 
-One-sample CADCodeVerify-to-FEA workflow that loads a single sample and prepares baseline and FEA-ready artifacts.
+One-sample CADCodeVerify-to-FEA workflow that loads a single sample and prepares baseline, FEA-ready, and manual-FEA artifacts.
 
 ## What Belongs Here
 
@@ -58,6 +58,6 @@ flowchart TD
 | `src/cad/` | CadQuery execution and export |
 | `src/prompts/` | FEA prompt construction |
 | `src/visualization/` | Rendering and comparison images |
-| `src/fea/` | Manual FEA artifacts |
-| `src/reports/` | Comparison markdown artifacts |
+| `src/fea/` | Manual FreeCAD FEM instructions, manual report template, and post-FEA prompt artifacts |
+| `src/reports/` | Comparison markdown artifacts, including the post-FEA comparison template |
 | `src/copied_from_cadcodeverify/` | Local copies of approved reference helpers |
