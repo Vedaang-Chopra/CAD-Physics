@@ -16,7 +16,7 @@
 
 **Phase:** 12 — Notebook And Documentation
 **Phase status:** In Progress
-**Current task:** Task 12.1 — Create inspection notebook (complete)
+**Current task:** Task 12.2 — Update module README
 
 ## Completed Tasks
 
@@ -323,22 +323,14 @@
 - Next task:
   - Task 6.2 — Implement baseline execution/export wrapper
 
-## Task 12.1 Result
+## Task 12.2 Result
 
-- Files created:
-  - `code_base/fea_cad_one_sample/notebooks/one_sample_fea_inspection.ipynb`
 - Files modified:
+  - `code_base/fea_cad_one_sample/README.md`
   - `docs/session_state.md`
 - Verify command:
-  - `test -s code_base/fea_cad_one_sample/notebooks/one_sample_fea_inspection.ipynb`
-  - `/opt/homebrew/Caskroom/miniconda/base/envs/cad_physics/bin/python - <<'PY'`
-    `import json`
-    `from pathlib import Path`
-    `path = Path('code_base/fea_cad_one_sample/notebooks/one_sample_fea_inspection.ipynb')`
-    `json.loads(path.read_text(encoding='utf-8'))`
-    `print('notebook json ok')`
-    `PY`
+  - `rg -n "flowchart TD|python -m src.main|interfaces.py|runners.py" code_base/fea_cad_one_sample/README.md`
 - Result:
-  - PASS (notebook exists and parses as valid JSON)
+  - PASS (README now reflects the notebook, entry points, and current run commands)
 - Next task:
-  - Task 12.2 — Update module README (blocked until Phase 12 checkpoint passes)
+  - Task 12.3 — Update agent maps

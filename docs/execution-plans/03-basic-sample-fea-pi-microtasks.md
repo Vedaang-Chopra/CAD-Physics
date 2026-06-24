@@ -1186,7 +1186,7 @@
     test -s code_base/fea_cad_one_sample/notebooks/one_sample_fea_inspection.ipynb
     ```
 
-- [ ] **Task 12.2 — Update module README**
+- [x] **Task 12.2 — Update module README**
   - File:
 
     ```text
