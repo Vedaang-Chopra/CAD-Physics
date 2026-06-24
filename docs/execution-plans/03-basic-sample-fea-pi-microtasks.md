@@ -1170,7 +1170,7 @@
 **Required skills:** `design-feature-notebook`, `write-module-readme`, `update-codebase-map`, `update-system-diagram`, `update-docs`, `verify-checkpoint`, `handoff-coding-agent`.  
 **Depends on:** Phase 11 checkpoint.
 
-- [ ] **Task 12.1 — Create inspection notebook**
+- [x] **Task 12.1 — Create inspection notebook**
   - File:
 
     ```text
