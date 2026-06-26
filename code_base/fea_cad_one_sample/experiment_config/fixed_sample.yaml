@@ -1,0 +1,7 @@
+code_hash_sha256: f461d1e3f361f9e7d0099d658406e7f822ad1f2a49136121b0177bb10810bdf8
+prompt_variant: expert
+reason: Selected DB sample is fixed for the experiment and has executable original
+  CAD code.
+sample_id: 00689964
+selection_mode: sample_id
+source: cadcodeverify-db
