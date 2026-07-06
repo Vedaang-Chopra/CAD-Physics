@@ -314,3 +314,322 @@ def _format_direction(loads: list[dict[str, Any]]) -> str:
     first_load = loads[0]
     direction = first_load.get("direction")
     return f"direction {direction}"
+
+
+def build_geometry_metrics_markdown(geometry_metrics: Mapping[str, Any], output_path: Path, force: bool = False) -> Path:
+    """Write deterministic geometry metrics as markdown."""
+
+    logger.info(
+        "build_geometry_metrics_markdown | start | output_path=%s | force=%s",
+        output_path,
+        force,
+    )
+    try:
+        output_path = Path(output_path)
+        _ensure_can_write_single(output_path, force=force)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(_render_geometry_metrics_markdown(geometry_metrics), encoding="utf-8")
+        logger.info("build_geometry_metrics_markdown | done | output_path=%s", output_path)
+        return output_path
+    except Exception:
+        logger.exception(
+            "build_geometry_metrics_markdown | failed | output_path=%s | force=%s",
+            output_path,
+            force,
+        )
+        raise
+
+
+def build_prompt_and_code_diffs_report(
+    original_prompt: str,
+    revision_prompt: str,
+    original_code: str,
+    revision_code: str,
+    output_path: Path,
+    *,
+    post_revision_prompt: str | None = None,
+    post_revision_code: str | None = None,
+    force: bool = False,
+) -> Path:
+    """Write prompt and code diffs for A→B and B→C."""
+
+    logger.info(
+        "build_prompt_and_code_diffs_report | start | output_path=%s | force=%s",
+        output_path,
+        force,
+    )
+    try:
+        output_path = Path(output_path)
+        _ensure_can_write_single(output_path, force=force)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(
+            _render_prompt_and_code_diffs(
+                original_prompt=original_prompt,
+                revision_prompt=revision_prompt,
+                original_code=original_code,
+                revision_code=revision_code,
+                post_revision_prompt=post_revision_prompt,
+                post_revision_code=post_revision_code,
+            ),
+            encoding="utf-8",
+        )
+        logger.info("build_prompt_and_code_diffs_report | done | output_path=%s", output_path)
+        return output_path
+    except Exception:
+        logger.exception(
+            "build_prompt_and_code_diffs_report | failed | output_path=%s | force=%s",
+            output_path,
+            force,
+        )
+        raise
+
+
+def build_change_log_summary(change_log: Mapping[str, Any], output_path: Path, force: bool = False) -> Path:
+    """Write a readable summary of the revision change log."""
+
+    logger.info(
+        "build_change_log_summary | start | output_path=%s | force=%s",
+        output_path,
+        force,
+    )
+    try:
+        output_path = Path(output_path)
+        _ensure_can_write_single(output_path, force=force)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(_render_change_log_summary(change_log), encoding="utf-8")
+        logger.info("build_change_log_summary | done | output_path=%s", output_path)
+        return output_path
+    except Exception:
+        logger.exception(
+            "build_change_log_summary | failed | output_path=%s | force=%s",
+            output_path,
+            force,
+        )
+        raise
+
+
+def build_final_experiment_report(
+    sample_id: str,
+    output_dir: Path,
+    geometry_metrics: Mapping[str, Any],
+    prompt_and_code_diffs_path: Path,
+    change_log_summary_path: Path,
+    state_abc_grid_path: Path,
+    report_summary: Mapping[str, Any] | None = None,
+    force: bool = False,
+) -> Path:
+    """Write the final three-state experiment report."""
+
+    logger.info(
+        "build_final_experiment_report | start | sample_id=%s | output_dir=%s | force=%s",
+        sample_id,
+        output_dir,
+        force,
+    )
+    try:
+        output_dir = Path(output_dir)
+        output_path = output_dir / "final_experiment_report.md"
+        _ensure_can_write_single(output_path, force=force)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(
+            _render_final_experiment_report(
+                sample_id=sample_id,
+                geometry_metrics=geometry_metrics,
+                prompt_and_code_diffs_path=prompt_and_code_diffs_path,
+                change_log_summary_path=change_log_summary_path,
+                state_abc_grid_path=state_abc_grid_path,
+                report_summary=report_summary,
+            ),
+            encoding="utf-8",
+        )
+        logger.info("build_final_experiment_report | done | output_path=%s", output_path)
+        return output_path
+    except Exception:
+        logger.exception(
+            "build_final_experiment_report | failed | sample_id=%s | output_dir=%s | force=%s",
+            sample_id,
+            output_dir,
+            force,
+        )
+        raise
+
+
+def _render_geometry_metrics_markdown(geometry_metrics: Mapping[str, Any]) -> str:
+    """Render geometry metrics into markdown tables and bullets."""
+
+    states = geometry_metrics.get("states", {})
+    deltas = geometry_metrics.get("pairwise_deltas", {})
+    lines = ["# Geometry Metrics", ""]
+    if states:
+        lines.extend(["## Per-State Metrics", "", "| State | Bounding Box (mm) | Volume (mm^3) | Surface Area (mm^2) | Center of Mass (mm) | Components | Watertight |", "|---|---|---:|---:|---|---:|---|"])
+        for state_name in geometry_metrics.get("state_order", states.keys()):
+            metrics = states.get(state_name, {})
+            lines.append(
+                "| {state} | {bbox} | {volume} | {area} | {com} | {components} | {watertight} |".format(
+                    state=state_name,
+                    bbox=_format_metric_vector(metrics.get("bounding_box_extents_mm")),
+                    volume=_format_metric_value(metrics.get("volume_mm3")),
+                    area=_format_metric_value(metrics.get("surface_area_mm2")),
+                    com=_format_metric_vector(metrics.get("center_of_mass_mm")),
+                    components=_format_metric_value(metrics.get("connected_component_count")),
+                    watertight=_format_metric_value(metrics.get("is_watertight")),
+                )
+            )
+        lines.append("")
+    if deltas:
+        lines.extend(["## Pairwise Deltas", "", "| Comparison | Bounding Box Δ | Volume Δ | Surface Area Δ | Center of Mass Δ | Component Δ | Watertight Change |", "|---|---|---:|---:|---|---:|---|"])
+        for delta_name, delta_metrics in deltas.items():
+            lines.append(
+                "| {name} | {bbox} | {volume} | {area} | {com} | {components} | {watertight} |".format(
+                    name=delta_name,
+                    bbox=_format_metric_vector(delta_metrics.get("bounding_box_extents_mm")),
+                    volume=_format_metric_value(delta_metrics.get("volume_mm3")),
+                    area=_format_metric_value(delta_metrics.get("surface_area_mm2")),
+                    com=_format_metric_vector(delta_metrics.get("center_of_mass_mm")),
+                    components=_format_metric_value(delta_metrics.get("connected_component_count")),
+                    watertight=_format_metric_value(delta_metrics.get("is_watertight_change")),
+                )
+            )
+        lines.append("")
+    sample_id = geometry_metrics.get("sample_id", "unknown")
+    lines.extend([f"Sample ID: {sample_id}", ""])
+    return "\n".join(lines)
+
+
+def _render_prompt_and_code_diffs(
+    *,
+    original_prompt: str,
+    revision_prompt: str,
+    original_code: str,
+    revision_code: str,
+    post_revision_prompt: str | None,
+    post_revision_code: str | None,
+) -> str:
+    """Render prompt and code diff sections for A→B and B→C."""
+
+    lines = ["# Prompt and Code Diffs", "", "## A -> B", "", "### Prompt Diff", "", _render_unified_diff(original_prompt, revision_prompt, "state_a_prompt.txt", "state_b_prompt.txt"), "", "### Code Diff", "", _render_unified_diff(original_code, revision_code, "state_a_code.py", "state_b_code.py"), ""]
+    if post_revision_prompt is not None and post_revision_code is not None:
+        lines.extend([
+            "## B -> C",
+            "",
+            "### Prompt Diff",
+            "",
+            _render_unified_diff(revision_prompt, post_revision_prompt, "state_b_prompt.txt", "state_c_prompt.txt"),
+            "",
+            "### Code Diff",
+            "",
+            _render_unified_diff(revision_code, post_revision_code, "state_b_code.py", "state_c_code.py"),
+            "",
+        ])
+    else:
+        lines.extend([
+            "## B -> C",
+            "",
+            "- Post-FEA comparison pending manual FEA evidence.",
+            "",
+        ])
+    return "\n".join(lines)
+
+
+def _render_unified_diff(left_text: str, right_text: str, left_name: str, right_name: str) -> str:
+    """Render a unified diff block as plain text."""
+
+    left_lines = (left_text or "").rstrip().splitlines()
+    right_lines = (right_text or "").rstrip().splitlines()
+    diff_lines = list(
+        difflib.unified_diff(
+            left_lines,
+            right_lines,
+            fromfile=left_name,
+            tofile=right_name,
+            lineterm="",
+        )
+    )
+    return "\n".join(diff_lines) if diff_lines else "No textual differences."
+
+
+def _render_change_log_summary(change_log: Mapping[str, Any]) -> str:
+    """Render a revision change log summary as markdown."""
+
+    lines = ["# Change Log Summary", ""]
+    sample_id = change_log.get("sample_id", "unknown")
+    lines.append(f"Sample ID: {sample_id}")
+    lines.append("")
+    lines.append(f"- Source state: {change_log.get('source_state', '<pending>')}")
+    lines.append(f"- Target state: {change_log.get('target_state', '<pending>')}")
+    lines.append(f"- Preserve identity: {change_log.get('preserve_identity', '<pending>')}")
+    changed_features = change_log.get("changed_features", []) or []
+    if changed_features:
+        lines.append("")
+        lines.append("## Changed Features")
+        lines.append("")
+        for feature in changed_features:
+            feature_name = feature.get("feature", "feature")
+            change_type = feature.get("change_type", "changed")
+            reason = feature.get("reason", "")
+            expected_effect = feature.get("expected_effect", "")
+            lines.append(f"- **{feature_name}**: {change_type}")
+            if reason:
+                lines.append(f"  - Reason: {reason}")
+            if expected_effect:
+                lines.append(f"  - Expected effect: {expected_effect}")
+    notes = change_log.get("notes", []) or []
+    if notes:
+        lines.append("")
+        lines.append("## Notes")
+        lines.append("")
+        for note in notes:
+            lines.append(f"- {note}")
+    lines.append("")
+    return "\n".join(lines)
+
+
+def _render_final_experiment_report(
+    *,
+    sample_id: str,
+    geometry_metrics: Mapping[str, Any],
+    prompt_and_code_diffs_path: Path,
+    change_log_summary_path: Path,
+    state_abc_grid_path: Path,
+    report_summary: Mapping[str, Any] | None,
+) -> str:
+    """Render the final experiment report markdown."""
+
+    report_summary = report_summary or {}
+    lines = ["# Final Experiment Report", "", f"Sample ID: {sample_id}", "", "## Visual Evidence", "", f"- A/B/C grid: {state_abc_grid_path}", f"- Prompt and code diffs: {prompt_and_code_diffs_path}", f"- Change log summary: {change_log_summary_path}", ""]
+    lines.extend(["## Deterministic Geometry Metrics", "", _render_geometry_metrics_markdown(geometry_metrics), ""])
+    lines.extend(["## FEA Result Summary", "", _render_report_summary(report_summary), ""])
+    lines.extend([
+        "## What Changed Because Physical Constraints Were Introduced",
+        "",
+        "- State B captures the FEA-constrained revision from State A.",
+        "- Geometry metrics quantify how the revision changed bounding box, volume, surface area, and connectivity.",
+        "- The prompt/code diff documents the identity-preserving edits that were allowed before any manual FEA feedback.",
+        "",
+        "## What Changed Because Actual FEA Feedback Was Introduced",
+        "",
+        "- Post-FEA changes remain pending until manual evidence is available.",
+        "- The B -> C diff section is a fixture-aware placeholder that becomes the real post-FEA comparison in the next phase.",
+        "",
+    ])
+    return "\n".join(lines)
+
+
+def _format_metric_value(value: Any) -> str:
+    """Format a metric value for markdown output."""
+
+    if value is None:
+        return "<pending>"
+    if isinstance(value, bool):
+        return "yes" if value else "no"
+    return str(value)
+
+
+def _format_metric_vector(values: Any) -> str:
+    """Format a vector metric for markdown output."""
+
+    if values is None:
+        return "<pending>"
+    if isinstance(values, (list, tuple)):
+        return "[" + ", ".join(_format_metric_value(value) for value in values) + "]"
+    return _format_metric_value(values)

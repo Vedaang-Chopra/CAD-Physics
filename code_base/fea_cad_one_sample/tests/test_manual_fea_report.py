@@ -9,7 +9,11 @@ from pathlib import Path
 
 import pytest
 
-from src.fea.manual_report import write_manual_fea_report_template
+from src.fea.manual_report import (
+    required_manual_fea_evidence_paths,
+    validate_manual_fea_completion,
+    write_manual_fea_report_template,
+)
 from src.fea.post_fea_prompt import write_post_fea_prompt
 from src.schemas.fea import LoadCase, ManualFEAReport
 
@@ -178,6 +182,35 @@ def test_write_post_fea_prompt_handles_pending_values(tmp_path: Path) -> None:
     assert result["fea_feedback_prompt_path"].endswith("fea_feedback_prompt.txt")
     assert "<pending>" in feedback_text
     assert "<pending>" in comparison_text
+
+
+def test_validate_manual_fea_completion_accepts_complete_evidence(tmp_path: Path) -> None:
+    """validate_manual_fea_completion accepts a complete report plus expected evidence files."""
+
+    manual_dir = tmp_path / "04_manual_freecad_fea"
+    screenshot_paths = required_manual_fea_evidence_paths(manual_dir)
+    for path in screenshot_paths:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("image-bytes", encoding="utf-8")
+
+    validation = validate_manual_fea_completion(_completed_report_data(), screenshot_paths)
+
+    assert validation["is_complete"] is True
+    assert validation["missing_fields"] == []
+    assert validation["missing_evidence_paths"] == []
+
+
+def test_validate_manual_fea_completion_rejects_pending_report_and_missing_evidence(tmp_path: Path) -> None:
+    """validate_manual_fea_completion reports missing values and screenshot files."""
+
+    manual_dir = tmp_path / "04_manual_freecad_fea"
+    screenshot_paths = required_manual_fea_evidence_paths(manual_dir)
+    blank_report = json.loads("{}")
+    validation = validate_manual_fea_completion(blank_report, screenshot_paths)
+
+    assert validation["is_complete"] is False
+    assert "max_von_mises_pa" in validation["missing_fields"]
+    assert validation["missing_evidence_paths"]
 
 
 def test_write_post_fea_prompt_refuses_to_overwrite_without_force(tmp_path: Path) -> None:

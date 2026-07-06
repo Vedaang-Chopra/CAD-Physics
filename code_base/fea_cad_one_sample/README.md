@@ -2,7 +2,7 @@
 
 ## Purpose
 
-One-sample CADCodeVerify-to-FEA workflow that loads a single sample, exposes public interfaces/runners for notebooks and CLI, and prepares DB-original State A, State B FEA-constrained revision, manual-FEA, gated State C post-FEA revision, and comparison artifacts.
+One-sample CADCodeVerify-to-FEA workflow that loads a single sample from either the live DB or the local dataset artifacts, exposes public interfaces/runners for notebooks and CLI, and prepares State A, State B FEA-constrained revision, manual-FEA, gated State C post-FEA revision, comparison artifacts, and a separate deterministic STEP→Gmsh→CalculiX replication notebook series under `notebooks/fea_replication/`.
 
 ## What Belongs Here
 
@@ -22,10 +22,12 @@ flowchart TD
     N0[notebooks/00_environment_and_db_check.ipynb] --> I[src/interfaces.py]
     N1[notebooks/01_select_and_load_sample.ipynb] --> I
     N2[notebooks/02_state_a_dataset_original.ipynb] --> I
-    N3[notebooks/03_state_b_fea_constrained_revision.ipynb] --> I
-    N4[notebooks/04_manual_freecad_fea_results_entry.ipynb] --> I
-    N5[notebooks/05_state_c_post_fea_revision.ipynb] --> I
-    N6[notebooks/06_three_way_visual_analysis.ipynb] --> I
+    N3[notebooks/03_state_b_fea_prompt_generation.ipynb] --> I
+    N4[notebooks/04_state_b_fea_prompt_loader.ipynb] --> I
+    N5[notebooks/05_manual_freecad_fea_results_entry.ipynb] --> I
+    N6[notebooks/06_state_c_post_fea_revision.ipynb] --> I
+    N7[notebooks/07_three_way_visual_analysis.ipynb] --> I
+    N8[notebooks/fea_replication/*.ipynb] --> I
     N7[notebooks/one_sample_fea_inspection.ipynb] --> I
     I --> C[src/cad/]
     I --> D[src/db/]
@@ -33,6 +35,7 @@ flowchart TD
     I --> V[src/visualization/]
     I --> F[src/fea/]
     I --> M[src/reports/]
+    I --> FR[src/fea_replication/]
     I --> P2[src/cad/post_fea_revision.py]
     I --> S[src/schemas/]
     R[src/runners.py] --> O[src/orchestration/pipeline.py]
@@ -55,16 +58,18 @@ flowchart TD
 
 | File | Purpose |
 |---|---|
-| `src/interfaces.py` | Public API surface for tests and notebooks |
+| `src/interfaces.py` | Public API surface for tests and notebooks (including the shared `load_selected_sample` helper) |
 | `src/runners.py` | Thin workflow orchestration entry points |
 | `src/main.py` | CLI commands |
-| `notebooks/00_environment_and_db_check.ipynb` | Environment, config, and DB access check notebook using only `src.interfaces` |
-| `notebooks/01_select_and_load_sample.ipynb` | Fixed sample selection and lock notebook using only `src.interfaces` |
+| `notebooks/00_environment_and_db_check.ipynb` | Environment, config, and DB/dataset access check notebook using only `src.interfaces` |
+| `notebooks/01_select_and_load_sample.ipynb` | Fixed sample selection and dataset/DB toggle notebook using only `src.interfaces` |
 | `notebooks/02_state_a_dataset_original.ipynb` | State A original CAD execution and visualization notebook using only `src.interfaces` |
-| `notebooks/03_state_b_fea_constrained_revision.ipynb` | State B FEA-constrained revision notebook using only `src.interfaces` |
-| `notebooks/04_manual_freecad_fea_results_entry.ipynb` | Manual FreeCAD FEM results entry notebook using only `src.interfaces` |
-| `notebooks/05_state_c_post_fea_revision.ipynb` | State C post-FEA revision notebook using only `src.interfaces` |
-| `notebooks/06_three_way_visual_analysis.ipynb` | Three-way comparison notebook using only `src.interfaces` |
+| `notebooks/03_state_b_fea_prompt_generation.ipynb` | State B FEA prompt generation notebook using only `src.interfaces` |
+| `notebooks/04_state_b_fea_prompt_loader.ipynb` | State B FEA prompt loader notebook using only `src.interfaces` |
+| `notebooks/05_manual_freecad_fea_results_entry.ipynb` | Manual FreeCAD FEM results entry notebook using only `src.interfaces` |
+| `notebooks/06_state_c_post_fea_revision.ipynb` | State C post-FEA revision notebook using only `src.interfaces` |
+| `notebooks/07_three_way_visual_analysis.ipynb` | Three-way comparison notebook using only `src.interfaces` |
+| `notebooks/fea_replication/` | New deterministic STEP→mesh→CalculiX notebook series using only `src.interfaces` |
 | `notebooks/one_sample_fea_inspection.ipynb` | Legacy overview/index notebook using only `src.interfaces` |
 
 ## How to Run
@@ -74,7 +79,8 @@ flowchart TD
 - **State commands:** `python -m src.main state-a --sample-id sample-001 --config config_gpt_5_4_mini.yaml`, `state-b`, `state-c`, and `comparison`
 - **Compatibility aliases:** `python -m src.main run --expert-random --config config_gpt_5_4_mini.yaml` and `compare`
 - **Notebook overview:** open `notebooks/one_sample_fea_inspection.ipynb`
-- **Walkthrough:** open `notebooks/00_environment_and_db_check.ipynb` then `01_select_and_load_sample.ipynb` through `06_three_way_visual_analysis.ipynb`
+- **Legacy walkthrough:** open `notebooks/00_environment_and_db_check.ipynb` then `01_select_and_load_sample.ipynb` through `07_three_way_visual_analysis.ipynb`
+- **FEA replication walkthrough:** open `notebooks/fea_replication/01_load_and_visualize_geometry.ipynb` through `06_parametric_study.ipynb`
 - **Tests:** `pytest tests -q`
 
 ## Internal Structure
@@ -85,10 +91,12 @@ flowchart TD
 | `notebooks/00_environment_and_db_check.ipynb` | Environment, config, and DB access check |
 | `notebooks/01_select_and_load_sample.ipynb` | Fixed sample selection and lock |
 | `notebooks/02_state_a_dataset_original.ipynb` | State A baseline execution and visualization |
-| `notebooks/03_state_b_fea_constrained_revision.ipynb` | State B FEA-constrained revision |
-| `notebooks/04_manual_freecad_fea_results_entry.ipynb` | Manual FreeCAD FEM results entry |
-| `notebooks/05_state_c_post_fea_revision.ipynb` | State C post-FEA revision |
-| `notebooks/06_three_way_visual_analysis.ipynb` | Three-way comparison and final report |
+| `notebooks/03_state_b_fea_prompt_generation.ipynb` | State B FEA prompt generation |
+| `notebooks/04_state_b_fea_prompt_loader.ipynb` | State B FEA prompt loader |
+| `notebooks/05_manual_freecad_fea_results_entry.ipynb` | Manual FreeCAD FEM results entry |
+| `notebooks/06_state_c_post_fea_revision.ipynb` | State C post-FEA revision |
+| `notebooks/07_three_way_visual_analysis.ipynb` | Three-way comparison and final report |
+| `notebooks/fea_replication/` | Deterministic geometry, mesh, solver, results, and study walkthrough |
 | `notebooks/one_sample_fea_inspection.ipynb` | Legacy overview/index |
 | `outputs/` | Generated run artifacts |
 | `src/schemas/` | Data contracts |
@@ -100,4 +108,5 @@ flowchart TD
 | `src/fea/` | Manual FreeCAD FEM instructions, manual report template, and post-FEA prompt artifacts |
 | `src/cad/post_fea_revision.py` | Gated State C revision generation and export helpers |
 | `src/reports/` | Comparison markdown artifacts, including the post-FEA comparison template |
+| `src/fea_replication/` | Deterministic STEP loading, Gmsh meshing, CalculiX execution, result parsing, and parametric study helpers |
 | `src/copied_from_cadcodeverify/` | Local copies of approved reference helpers |

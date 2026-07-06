@@ -173,10 +173,14 @@ def _frame_to_sample(frame: pd.DataFrame, *, selection_mode: str) -> CADSample:
         raise LookupError(f"Sample {sample_id} does not contain prompt text.")
 
     prompt_variant = "expert" if expert_prompt else "non_expert"
+    ground_truth_code = row.get("ground_truth_code")
+    if not isinstance(ground_truth_code, str) or not ground_truth_code.strip():
+        raise LookupError(f"Sample {sample_id} does not contain original CAD code.")
+
     metadata = {
         "selection_mode": selection_mode,
         "prompt_variant": prompt_variant,
-        "ground_truth_code": row.get("ground_truth_code"),
+        "ground_truth_code": ground_truth_code,
         "non_expert_prompt": non_expert_prompt,
     }
     if expert_prompt:
@@ -188,7 +192,7 @@ def _frame_to_sample(frame: pd.DataFrame, *, selection_mode: str) -> CADSample:
         prompt_variant=prompt_variant,
         source="cadcodeverify-db",
         metadata=metadata,
-        ground_truth_code=None,
+        ground_truth_code=ground_truth_code,
     )
 
 

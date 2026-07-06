@@ -6,6 +6,8 @@
 
 This project exists to build a first practical CADCodeVerify-to-FEA workflow: generate or adapt one CadQuery CAD sample, make it FEA-ready, export STEP-first geometry, prepare a manual FreeCAD FEM + CalculiX validation path, and capture feedback artifacts for later physics-aware refinement.
 
+The current approved remediation package lives under `docs/remediation/` and temporarily supersedes conflicting baseline-generation wording in lower-authority docs for this controlled A/B/C experiment.
+
 The documentation system must keep that intent visible. Docs must not drift into a generic CAD generation project, a full benchmark, or an automated FEA solver integration.
 
 ## Documentation Authority Order
@@ -34,6 +36,8 @@ When documents disagree, use this order:
 9. `docs/session_state.md`
    - Current execution state and resume point.
 
+For the current remediation, `docs/remediation/` is the approved execution package and must be treated as the active source of truth when it conflicts with older baseline-generation wording.
+
 If lower-authority docs disagree with higher-authority docs, Pi must update the lower-authority docs before implementation continues.
 
 ## Documentation Areas
@@ -43,10 +47,13 @@ If lower-authority docs disagree with higher-authority docs, Pi must update the 
 | `conversations/` | User/advisor intent and background discussion | Read-only reference during implementation |
 | `docs/gpt-specs/` | Original feature specs | Do not edit unless user asks to revise original spec |
 | `docs/execution-plans/` | Pi execution contract, architecture, tasks, checkpoints, and prompts | Update whenever execution behavior changes |
+| `docs/remediation/` | Approved remediation package for the current controlled A/B/C experiment | Keep aligned with the active corrected experiment and phase gates |
 | `docs/ai_context/` | Agent-facing maps and documentation taxonomy | Update whenever structure, workflow, or doc authority changes |
+| `docs/ai_context/AGENT_EXECUTION_LOG.md` | Cross-session task log | Update after every task attempt and before starting the next task |
 | `docs/session_state.md` | Active progress tracker | Update after every phase, every checkpoint, and before stopping |
 | `code_base/fea_cad_one_sample/README.md` | Module-facing human and agent guide | Create/update with module implementation |
-| `code_base/fea_cad_one_sample/notebooks/one_sample_fea_inspection.ipynb` | Public inspection notebook | Keep public-only imports and temporary artifacts |
+| `code_base/fea_cad_one_sample/notebooks/00_select_real_sample.ipynb` through `05_final_abc_comparison.ipynb` plus `one_sample_fea_inspection.ipynb` | Public notebook walkthrough and overview | Keep public-only imports and real `outputs/sample_<sample_id>/` artifacts |
+| `code_base/fea_cad_one_sample/notebooks/fea_replication/` | Deterministic STEP→mesh→CalculiX notebook series | Keep public-only imports and explicit `outputs/fea_replication/baseline/` artifacts |
 
 ## Required Documentation Updates During Implementation
 

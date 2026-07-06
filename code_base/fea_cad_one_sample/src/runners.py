@@ -14,10 +14,16 @@ from src.orchestration.pipeline import (
     build_comparison_stage,
     build_fea_ready_prompt_stage,
     build_manual_fea_stage,
+    build_post_fea_stage,
+    generate_fea_ready_code_stage,
+    execute_fea_ready_stage,
+    generate_original_code_stage,
+    execute_original_stage,
     prepare_run_context,
     render_fea_ready_stage,
     render_original_stage,
     run_full_pipeline,
+    write_original_prompt_stage,
 )
 from src.schemas.config import PipelineConfig
 from src.schemas.pipeline import PipelineSummary
@@ -80,6 +86,136 @@ def run_full_pipeline_runner(
     except Exception:
         logger.exception(
             "run_full_pipeline_runner | failed | config_name=%s | sample_id=%s",
+            config_name,
+            sample_id,
+        )
+        raise
+
+
+def state_a_only_runner(config_name: str, sample_id: str | None, random: bool, expert_random: bool, force: bool) -> dict[str, str]:
+    """Run the State A pipeline stages for one selected sample."""
+
+    logger.info(
+        "state_a_only_runner | start | config_name=%s | sample_id=%s | random=%s | expert_random=%s | force=%s",
+        config_name,
+        sample_id,
+        random,
+        expert_random,
+        force,
+    )
+    try:
+        context = prepare_run_context(
+            _build_pipeline_config(config_name, force=force),
+            {
+                "sample_id": sample_id,
+                "random": random,
+                "expert_random": expert_random,
+            },
+        )
+        result: dict[str, str] = {}
+        result.update(write_original_prompt_stage(context))
+        result.update(generate_original_code_stage(context))
+        result.update(execute_original_stage(context))
+        result.update(render_original_stage(context))
+        logger.info(
+            "state_a_only_runner | done | sample_id=%s | files=%s",
+            sample_id,
+            sorted(result.keys()),
+        )
+        return result
+    except Exception:
+        logger.exception(
+            "state_a_only_runner | failed | config_name=%s | sample_id=%s",
+            config_name,
+            sample_id,
+        )
+        raise
+
+
+def state_b_only_runner(config_name: str, sample_id: str | None, random: bool, expert_random: bool, force: bool) -> dict[str, str]:
+    """Run the State A and State B pipeline stages for one selected sample."""
+
+    logger.info(
+        "state_b_only_runner | start | config_name=%s | sample_id=%s | random=%s | expert_random=%s | force=%s",
+        config_name,
+        sample_id,
+        random,
+        expert_random,
+        force,
+    )
+    try:
+        context = prepare_run_context(
+            _build_pipeline_config(config_name, force=force),
+            {
+                "sample_id": sample_id,
+                "random": random,
+                "expert_random": expert_random,
+            },
+        )
+        result: dict[str, str] = {}
+        result.update(write_original_prompt_stage(context))
+        result.update(generate_original_code_stage(context))
+        result.update(execute_original_stage(context))
+        result.update(render_original_stage(context))
+        result.update(build_fea_ready_prompt_stage(context))
+        result.update(generate_fea_ready_code_stage(context))
+        result.update(execute_fea_ready_stage(context))
+        result.update(render_fea_ready_stage(context))
+        logger.info(
+            "state_b_only_runner | done | sample_id=%s | files=%s",
+            sample_id,
+            sorted(result.keys()),
+        )
+        return result
+    except Exception:
+        logger.exception(
+            "state_b_only_runner | failed | config_name=%s | sample_id=%s",
+            config_name,
+            sample_id,
+        )
+        raise
+
+
+def state_c_only_runner(config_name: str, sample_id: str | None, random: bool, expert_random: bool, force: bool) -> dict[str, Any]:
+    """Run the State A, State B, and gated State C pipeline stages for one selected sample."""
+
+    logger.info(
+        "state_c_only_runner | start | config_name=%s | sample_id=%s | random=%s | expert_random=%s | force=%s",
+        config_name,
+        sample_id,
+        random,
+        expert_random,
+        force,
+    )
+    try:
+        context = prepare_run_context(
+            _build_pipeline_config(config_name, force=force),
+            {
+                "sample_id": sample_id,
+                "random": random,
+                "expert_random": expert_random,
+            },
+        )
+        result: dict[str, Any] = {}
+        result.update(write_original_prompt_stage(context))
+        result.update(generate_original_code_stage(context))
+        result.update(execute_original_stage(context))
+        result.update(render_original_stage(context))
+        result.update(build_fea_ready_prompt_stage(context))
+        result.update(generate_fea_ready_code_stage(context))
+        result.update(execute_fea_ready_stage(context))
+        result.update(render_fea_ready_stage(context))
+        result.update(build_manual_fea_stage(context))
+        result.update(build_post_fea_stage(context))
+        logger.info(
+            "state_c_only_runner | done | sample_id=%s | files=%s",
+            sample_id,
+            sorted(result.keys()),
+        )
+        return result
+    except Exception:
+        logger.exception(
+            "state_c_only_runner | failed | config_name=%s | sample_id=%s",
             config_name,
             sample_id,
         )
@@ -171,33 +307,55 @@ def build_freecad_instructions_only_runner(config_name: str, sample_id: str, for
         raise
 
 
-def compare_only_runner(config_name: str, sample_id: str, force: bool) -> dict[str, str]:
-    """Build the comparison artifacts for one sample."""
+def comparison_only_runner(config_name: str, sample_id: str | None, random: bool, expert_random: bool, force: bool) -> dict[str, str]:
+    """Build the State A/B comparison artifacts for one selected sample."""
 
     logger.info(
-        "compare_only_runner | start | config_name=%s | sample_id=%s | force=%s",
+        "comparison_only_runner | start | config_name=%s | sample_id=%s | random=%s | expert_random=%s | force=%s",
         config_name,
         sample_id,
+        random,
+        expert_random,
         force,
     )
     try:
-        context = prepare_run_context(_build_pipeline_config(config_name, force=force), {"sample_id": sample_id})
-        if context.load_case is None:
-            build_fea_ready_prompt_stage(context)
-        result = build_comparison_stage(context)
+        context = prepare_run_context(
+            _build_pipeline_config(config_name, force=force),
+            {
+                "sample_id": sample_id,
+                "random": random,
+                "expert_random": expert_random,
+            },
+        )
+        result: dict[str, str] = {}
+        result.update(write_original_prompt_stage(context))
+        result.update(generate_original_code_stage(context))
+        result.update(execute_original_stage(context))
+        result.update(render_original_stage(context))
+        result.update(build_fea_ready_prompt_stage(context))
+        result.update(generate_fea_ready_code_stage(context))
+        result.update(execute_fea_ready_stage(context))
+        result.update(render_fea_ready_stage(context))
+        result.update(build_comparison_stage(context))
         logger.info(
-            "compare_only_runner | done | sample_id=%s | files=%s",
+            "comparison_only_runner | done | sample_id=%s | files=%s",
             sample_id,
             sorted(result.keys()),
         )
         return result
     except Exception:
         logger.exception(
-            "compare_only_runner | failed | config_name=%s | sample_id=%s",
+            "comparison_only_runner | failed | config_name=%s | sample_id=%s",
             config_name,
             sample_id,
         )
         raise
+
+
+def compare_only_runner(config_name: str, sample_id: str | None, force: bool) -> dict[str, str]:
+    """Compatibility alias for the comparison artifacts command."""
+
+    return comparison_only_runner(config_name, sample_id, False, False, force)
 
 
 def _build_pipeline_config(config_name: str, force: bool) -> PipelineConfig:

@@ -14,6 +14,8 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import numpy as np
 import trimesh
 
+from src.schemas.fea import SelectorHints
+
 logger = logging.getLogger(__name__)
 
 _VIEW_SETTINGS: dict[str, dict[str, float]] = {
@@ -25,7 +27,7 @@ _VIEW_SETTINGS: dict[str, dict[str, float]] = {
 
 
 def render_views(stl_path: Path, output_dir: Path, force: bool = False) -> dict[str, str]:
-    """Render front, side, top, and isometric PNG views for one STL."""
+    """Render standard PNG views plus a deterministic grid view for one STL."""
 
     logger.info(
         "render_views | start | stl_path=%s | output_dir=%s | force=%s",
@@ -45,6 +47,10 @@ def render_views(stl_path: Path, output_dir: Path, force: bool = False) -> dict[
             image_path = output_dir / f"{view_name}.png"
             _render_single_view(mesh, view_name=view_name, output_path=image_path, force=force)
             result[view_name] = str(image_path)
+
+        grid_path = output_dir / "grid.png"
+        _render_grid_view(mesh, output_path=grid_path, force=force)
+        result["grid"] = str(grid_path)
 
         logger.info(
             "render_views | done | stl_path=%s | output_dir=%s | views=%s",
@@ -89,6 +95,41 @@ def _load_mesh(stl_path: Path) -> trimesh.Trimesh:
     return mesh
 
 
+def render_support_load_annotation(
+    stl_path: Path,
+    output_path: Path,
+    selector_hints: SelectorHints,
+    force: bool = False,
+) -> Path:
+    """Render an annotated support/load PNG for State B."""
+
+    logger.info(
+        "render_support_load_annotation | start | stl_path=%s | output_path=%s | force=%s",
+        stl_path,
+        output_path,
+        force,
+    )
+    try:
+        output_path = Path(output_path)
+        if output_path.exists() and not force:
+            raise FileExistsError(f"Existing annotated support/load image found at {output_path}. Use force=True to overwrite.")
+        mesh = _load_mesh(Path(stl_path))
+        _render_annotated_support_load_view(mesh, output_path=output_path, selector_hints=selector_hints)
+        logger.info(
+            "render_support_load_annotation | done | output_path=%s",
+            output_path,
+        )
+        return output_path
+    except Exception:
+        logger.exception(
+            "render_support_load_annotation | failed | stl_path=%s | output_path=%s | force=%s",
+            stl_path,
+            output_path,
+            force,
+        )
+        raise
+
+
 def _render_single_view(mesh: trimesh.Trimesh, *, view_name: str, output_path: Path, force: bool) -> None:
     """Render one standard view to a PNG file."""
 
@@ -126,4 +167,109 @@ def _render_single_view(mesh: trimesh.Trimesh, *, view_name: str, output_path: P
     fig.tight_layout(pad=0)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output_path, bbox_inches="tight", pad_inches=0.0)
+    plt.close(fig)
+
+
+def _render_grid_view(mesh: trimesh.Trimesh, *, output_path: Path, force: bool) -> None:
+    """Render a deterministic grid-backed orthographic view."""
+
+    if output_path.exists() and not force:
+        return
+
+    triangles = np.asarray(mesh.triangles)
+    fig = plt.figure(figsize=(4.0, 4.0), dpi=160)
+    ax = fig.add_subplot(111, projection="3d")
+    collection = Poly3DCollection(
+        triangles,
+        facecolor="#d9e8c5",
+        edgecolor="#5c7a3a",
+        linewidths=0.2,
+        alpha=0.95,
+    )
+    ax.add_collection3d(collection)
+
+    points = np.asarray(mesh.vertices, dtype=float)
+    mins = points.min(axis=0)
+    maxs = points.max(axis=0)
+    spans = np.maximum(maxs - mins, 1.0e-6)
+    center = (mins + maxs) / 2.0
+    max_span = float(np.max(spans))
+    half_span = max_span * 0.62
+    ax.set_xlim(center[0] - half_span, center[0] + half_span)
+    ax.set_ylim(center[1] - half_span, center[1] + half_span)
+    ax.set_zlim(center[2] - half_span, center[2] + half_span)
+    ax.view_init(elev=90.0, azim=-90.0)
+    ax.grid(True, color="#b5c9a0", linestyle="--", linewidth=0.4)
+    ax.set_xlabel("X")
+    ax.set_ylabel("Y")
+    ax.set_zlabel("Z")
+    fig.tight_layout(pad=0.2)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output_path, bbox_inches="tight", pad_inches=0.02)
+    plt.close(fig)
+
+
+def _render_annotated_support_load_view(
+    mesh: trimesh.Trimesh,
+    *,
+    output_path: Path,
+    selector_hints: SelectorHints,
+) -> None:
+    """Render a deterministic annotated support/load view for State B."""
+
+    if output_path.exists():
+        return
+
+    triangles = np.asarray(mesh.triangles)
+    fig = plt.figure(figsize=(6.2, 4.0), dpi=160)
+    ax = fig.add_subplot(111, projection="3d")
+    collection = Poly3DCollection(
+        triangles,
+        facecolor="#8bb7d6",
+        edgecolor="#34515e",
+        linewidths=0.25,
+        alpha=1.0,
+    )
+    ax.add_collection3d(collection)
+
+    points = np.asarray(mesh.vertices, dtype=float)
+    mins = points.min(axis=0)
+    maxs = points.max(axis=0)
+    spans = np.maximum(maxs - mins, 1.0e-6)
+    center = (mins + maxs) / 2.0
+    max_span = float(np.max(spans))
+    half_span = max_span * 0.55
+    ax.set_xlim(center[0] - half_span, center[0] + half_span)
+    ax.set_ylim(center[1] - half_span, center[1] + half_span)
+    ax.set_zlim(center[2] - half_span, center[2] + half_span)
+    ax.set_box_aspect((1.0, 1.0, 1.0))
+    ax.view_init(elev=30.0, azim=-45.0)
+    ax.set_axis_off()
+    ax.text2D(
+        0.02,
+        0.08,
+        f"FIXED: {selector_hints.fixed_region_description}",
+        transform=ax.transAxes,
+        color="#a11d1d",
+        bbox={"facecolor": "white", "alpha": 0.85, "edgecolor": "#a11d1d"},
+    )
+    ax.text2D(
+        0.56,
+        0.90,
+        f"LOAD: {selector_hints.load_region_description}",
+        transform=ax.transAxes,
+        color="#123f8a",
+        bbox={"facecolor": "white", "alpha": 0.85, "edgecolor": "#123f8a"},
+    )
+    ax.text2D(
+        0.02,
+        0.02,
+        f"Selectors: fixed={selector_hints.fixed_region_selector} | load={selector_hints.load_region_selector}",
+        transform=ax.transAxes,
+        fontsize=7,
+        color="#333333",
+    )
+    fig.tight_layout(pad=0.2)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output_path, bbox_inches="tight", pad_inches=0.02)
     plt.close(fig)

@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 
 from src.reports.build_comparison_report import build_post_fea_comparison_report
 from src.schemas.fea import LoadCase
@@ -77,14 +77,6 @@ def _ensure_can_write(prompt_path: Path, comparison_path: Path, *, force: bool) 
         )
 
 
-def _load_manual_report(report_path: Path) -> dict[str, Any]:
-    """Load the manual FreeCAD FEM report JSON from disk."""
-
-    if not report_path.exists():
-        raise FileNotFoundError(f"Manual FEA report not found: {report_path}")
-    return json.loads(report_path.read_text(encoding="utf-8"))
-
-
 def _render_post_fea_prompt(sample_id: str, load_case: LoadCase, report: dict[str, Any]) -> str:
     """Render the post-FEA refinement prompt."""
 
@@ -149,7 +141,93 @@ def _render_post_fea_prompt(sample_id: str, load_case: LoadCase, report: dict[st
     )
 
 
-def _format_value(report: dict[str, Any], key: str) -> Any:
+def build_post_fea_prompt(
+    fea_revision_code: str,
+    load_case: LoadCase,
+    fea_report: Mapping[str, Any],
+    screenshots: list[Path],
+) -> str:
+    """Build the post-FEA prompt for revising State B into State C."""
+
+    screenshot_lines = [f"- {path}" for path in screenshots]
+    return "\n".join(
+        [
+            "The CAD design was tested using FreeCAD FEM + CalculiX.",
+            "",
+            f"Sample ID: {load_case.sample_id}",
+            "",
+            "## State B Code",
+            "```python",
+            fea_revision_code.rstrip(),
+            "```",
+            "",
+            "## Load Case",
+            f"- Material: {load_case.material.get('name', 'Unknown material')}",
+            f"- Young's modulus: {load_case.material.get('youngs_modulus_pa')} Pa",
+            f"- Poisson's ratio: {load_case.material.get('poissons_ratio')}",
+            f"- Yield strength: {load_case.material.get('yield_strength_pa')} Pa",
+            f"- Fixed/support region: {_format_region(load_case.boundary_conditions, default='fixed/support region')}",
+            f"- Load region: {_format_region(load_case.loads, default='load region')}",
+            f"- Applied load: {_format_force(load_case.loads)} {_format_direction(load_case.loads)}".strip(),
+            f"- Max displacement target: {load_case.requirements.get('max_displacement_mm')} mm",
+            f"- Required safety factor: {load_case.requirements.get('required_safety_factor')}",
+            f"- Max von Mises target: {load_case.requirements.get('max_von_mises_pa')} Pa",
+            "",
+            "## Manual FEA Results",
+            f"- Max von Mises stress: {_format_value(fea_report, 'max_von_mises_pa')}",
+            f"- Max displacement: {_format_value(fea_report, 'max_displacement_mm')}",
+            f"- Computed safety factor: {_format_value(fea_report, 'computed_safety_factor')}",
+            f"- Stress hotspot: {_format_value(fea_report, 'stress_hotspot_description')}",
+            f"- Pass/fail: {_format_value(fea_report, 'overall_pass')}",
+            "",
+            "## Evidence Paths",
+            *screenshot_lines,
+            "",
+            "Revise the existing design based on the measured stress, displacement, safety factor, and hotspot evidence.",
+            "Keep the original design intent.",
+            "Do not change the material or load.",
+            "Preserve the support and load faces so the geometry stays interpretable.",
+            "Prefer simple meshable geometry.",
+            "Use one connected solid.",
+            "If stress is too high, add ribs, gussets, thicker sections, fillets, or a better load path.",
+            "If displacement is too high, increase section height, add triangular support, or stiffen the span.",
+            "If overbuilt, remove non-critical bulk while keeping the required safety factor.",
+            "Return a machine-readable change log alongside the revised CadQuery code.",
+            "",
+        ]
+    )
+
+
+def validate_post_fea_inputs(
+    manual_report_path: Path,
+    screenshots: list[Path],
+) -> dict[str, Any]:
+    """Validate the manual report and screenshot evidence required for State C."""
+
+    report = _load_manual_report(manual_report_path)
+    validation = _validate_manual_fea_completion(report, screenshots)
+    validation["manual_report_path"] = str(manual_report_path)
+    validation["screenshot_paths"] = [str(path) for path in screenshots]
+    return validation
+
+
+def _load_manual_report(manual_report_path: Path) -> dict[str, Any]:
+    """Load the manual FEA report JSON from disk."""
+
+    if not manual_report_path.exists():
+        raise FileNotFoundError(f"Manual FEA report not found: {manual_report_path}")
+    return json.loads(manual_report_path.read_text(encoding="utf-8"))
+
+
+def _validate_manual_fea_completion(report: Mapping[str, Any], screenshots: list[Path]) -> dict[str, Any]:
+    """Local validation wrapper for the post-FEA prompt builder."""
+
+    from src.fea.manual_report import validate_manual_fea_completion as _validate_manual_fea_completion_impl
+
+    return _validate_manual_fea_completion_impl(report, screenshots)
+
+
+def _format_value(report: Mapping[str, Any], key: str) -> Any:
     """Format a manual FEA report value or return a placeholder."""
 
     value = report.get(key)

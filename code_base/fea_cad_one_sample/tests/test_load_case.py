@@ -8,8 +8,8 @@ from pathlib import Path
 
 import pytest
 
-from src.fea.write_load_case import MAX_VON_MISES_PA, write_load_case
-from src.schemas.fea import LoadCase
+from src.fea.write_load_case import MAX_VON_MISES_PA, write_load_case, write_selector_hints
+from src.schemas.fea import LoadCase, SelectorHints
 
 
 def test_write_load_case_writes_expected_defaults(tmp_path: Path) -> None:
@@ -60,13 +60,38 @@ def test_write_load_case_writes_expected_defaults(tmp_path: Path) -> None:
 
 
 
-def test_write_load_case_refuses_to_overwrite_without_force(tmp_path: Path) -> None:
-    """write_load_case preserves existing JSON unless force=True."""
+def test_write_selector_hints_writes_expected_defaults(tmp_path: Path) -> None:
+    """write_selector_hints writes the default selector hints to JSON."""
 
-    output_path = tmp_path / "load_case.json"
+    load_case = write_load_case("sample-001", tmp_path / "load_case.json")
+    output_path = tmp_path / "selector_hints.json"
+
+    hints = write_selector_hints(load_case, output_path)
+
+    expected = SelectorHints(
+        sample_id="sample-001",
+        fixed_region_description="wall-facing mounting plate face",
+        load_region_description="top face near free end",
+        fixed_region_selector={"axis": "x", "side": "minimum"},
+        load_region_selector={"axis": "x", "side": "maximum"},
+        notes=[
+            "Confirm the fixed region before running FreeCAD FEM.",
+            "Confirm the load region before running FreeCAD FEM.",
+        ],
+    )
+
+    assert hints == expected
+    assert json.loads(output_path.read_text(encoding="utf-8")) == asdict(expected)
+
+
+def test_write_selector_hints_refuses_to_overwrite_without_force(tmp_path: Path) -> None:
+    """write_selector_hints preserves existing JSON unless force=True."""
+
+    load_case = write_load_case("sample-001", tmp_path / "load_case.json")
+    output_path = tmp_path / "selector_hints.json"
     output_path.write_text("keep-me", encoding="utf-8")
 
     with pytest.raises(FileExistsError, match="force=True"):
-        write_load_case("sample-001", output_path, force=False)
+        write_selector_hints(load_case, output_path, force=False)
 
     assert output_path.read_text(encoding="utf-8") == "keep-me"

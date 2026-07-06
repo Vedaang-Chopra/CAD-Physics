@@ -2,30 +2,30 @@
 """LLM connector and database connection utilities."""
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Any, Dict
 
-from .paths import ensure_code_base_on_path
+from ..llm.llm import LLMConnector
 
 
 def build_llm_connector(model_config: Dict[str, Any]):
-    """Instantiate ``LLMConnector`` from a normalized model config dict.
-
-    The fallback import depends on ``ensure_code_base_on_path`` to bootstrap
-    the project import path.
-    """
-    try:
-        from utils.llm.llm import LLMConnector
-    except ImportError:
-        ensure_code_base_on_path(start_path=Path(__file__).resolve())
-        from utils.llm.llm import LLMConnector
+    """Instantiate ``LLMConnector`` from a normalized model config dict."""
 
     return LLMConnector(
-        model=model_config.get("model") or model_config.get("name") or "unknown",
+        model=_resolve_model_name(model_config),
         provider=model_config.get("provider", "openai"),
         api_key=model_config.get("api_key"),
         connection_string=model_config.get("connection_string"),
     )
+
+
+def _resolve_model_name(model_config: Dict[str, Any]) -> str:
+    """Choose the real model identifier from supported config keys."""
+
+    for key in ("id", "model", "name", "slug"):
+        value = model_config.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return "unknown"
 
 
 def connect_db(config: Dict[str, Any]):

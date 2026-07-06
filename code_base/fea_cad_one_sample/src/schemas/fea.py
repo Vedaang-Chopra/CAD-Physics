@@ -1,9 +1,9 @@
-"""Schema definitions for FEA load cases and manual reports."""
+"""Schema definitions for FEA load cases, selector hints, and manual reports."""
 
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -19,6 +19,30 @@ class LoadCase:
     boundary_conditions: list[dict[str, Any]]
     loads: list[dict[str, Any]]
     requirements: dict[str, Any]
+
+
+@dataclass(slots=True)
+class SelectorHints:
+    """Human-confirmable support and load selector hints for State B."""
+
+    sample_id: str
+    fixed_region_description: str
+    load_region_description: str
+    fixed_region_selector: dict[str, Any]
+    load_region_selector: dict[str, Any]
+    notes: list[str] = field(default_factory=list)
+
+
+@dataclass(slots=True)
+class RevisionChangeLog:
+    """Machine-readable summary of a code revision."""
+
+    sample_id: str
+    source_state: str
+    target_state: str
+    preserve_identity: bool
+    changed_features: list[dict[str, Any]] = field(default_factory=list)
+    notes: list[str] = field(default_factory=list)
 
 
 @dataclass(slots=True)

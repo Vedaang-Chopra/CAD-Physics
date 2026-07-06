@@ -11,22 +11,22 @@ from pathlib import Path
 from typing import Any, Mapping
 
 from src.cad.execute_cadquery import execute_and_export_cadquery
-from src.cad.generate_fea_ready import execute_and_export_fea_ready_cadquery, generate_fea_ready_code
+from src.cad.generate_fea_ready import execute_and_export_fea_revision_cadquery, revise_code_for_fea
+from src.cad.post_fea_revision import execute_and_export_post_fea_revision_cadquery, revise_code_after_fea
 from src.cad.generate_original import generate_original_code
 from src.config import load_config
 from src.db.load_sample import load_sample
 from src.fea.freecad_manual_instructions import write_freecad_instructions
-from src.fea.manual_report import write_manual_fea_report_template
-from src.fea.post_fea_prompt import write_post_fea_prompt
-from src.fea.write_load_case import write_load_case
+from src.fea.manual_report import required_manual_fea_evidence_paths, write_manual_fea_report_template
+from src.fea.post_fea_prompt import validate_post_fea_inputs
 from src.prompts.build_fea_prompt import build_fea_prompt
 from src.reports.build_comparison_report import build_comparison_artifacts
 from src.schemas.config import PipelineConfig
-from src.schemas.fea import LoadCase
+from src.schemas.fea import LoadCase, SelectorHints
 from src.schemas.pipeline import PipelineSummary
 from src.schemas.sample import CADSample
 from src.visualization.compare_views import build_side_by_side_comparison
-from src.visualization.render_views import render_views
+from src.visualization.render_views import render_support_load_annotation, render_views
 
 from .manifest import (
     append_run_failure,
@@ -74,8 +74,10 @@ class PipelineContext:
     original_prompt: str = ""
     fea_ready_prompt: str = ""
     load_case: LoadCase | None = None
+    selector_hints: SelectorHints | None = None
     original_code: str = ""
     fea_ready_code: str = ""
+    fea_revision_code: str = ""
     stage_statuses: dict[str, str] = field(default_factory=dict)
     artifact_paths: dict[str, str] = field(default_factory=dict)
     failures: list[dict[str, Any]] = field(default_factory=list)
@@ -102,11 +104,11 @@ def prepare_run_context(config: PipelineConfig, selection: Mapping[str, Any]) ->
             connection_string=connection_string,
             sample=sample,
             sample_output_dir=sample_output_dir,
-            original_dir=sample_output_dir / "01_original",
-            fea_ready_dir=sample_output_dir / "02_fea_ready",
+            original_dir=sample_output_dir / "01_dataset_original",
+            fea_ready_dir=sample_output_dir / "02_fea_constrained_revision",
             comparison_dir=sample_output_dir / "03_comparison",
             manual_dir=sample_output_dir / "04_manual_freecad_fea",
-            post_fea_dir=sample_output_dir / "05_post_fea_refinement",
+            post_fea_dir=sample_output_dir / "05_post_fea_revision",
             manifest_path=sample_output_dir / "run_manifest.json",
         )
         logger.info(
@@ -165,9 +167,10 @@ def generate_original_code_stage(context: PipelineContext) -> dict[str, str]:
         code = generate_original_code(context.sample, context.config)
         context.original_code = code
         result = {
-            "original_code_path": str(context.original_dir / "original_code.py"),
-            "original_raw_response_path": str(context.original_dir / "original_raw_response.txt"),
+            "original_prompt_path": str(context.original_dir / "original_prompt.txt"),
+            "database_original_code_path": str(context.original_dir / "database_original_code.py"),
             "original_metadata_path": str(context.original_dir / "metadata.json"),
+            "original_provenance_path": str(context.original_dir / "provenance.json"),
         }
         context.artifact_paths.update(result)
         logger.info(
@@ -248,7 +251,7 @@ def render_original_stage(context: PipelineContext) -> dict[str, str]:
 
 
 def build_fea_ready_prompt_stage(context: PipelineContext) -> dict[str, str]:
-    """Write the load case JSON and FEA-ready prompt text."""
+    """Write the State B revision prompt and its supporting artifacts."""
 
     logger.info(
         "build_fea_ready_prompt_stage | start | sample_id=%s | output_dir=%s",
@@ -257,22 +260,35 @@ def build_fea_ready_prompt_stage(context: PipelineContext) -> dict[str, str]:
     )
     try:
         context.fea_ready_dir.mkdir(parents=True, exist_ok=True)
-        load_case_path = context.fea_ready_dir / "load_case.json"
-        load_case = write_load_case(context.sample.sample_id, load_case_path, force=context.config.force)
-        fea_prompt = build_fea_prompt(context.sample, load_case)
-        fea_prompt_path = context.fea_ready_dir / "fea_ready_prompt.txt"
-        _write_text_artifact(fea_prompt_path, fea_prompt, force=context.config.force)
+        original_prompt = _ensure_original_prompt(context)
+        original_code = _ensure_original_code(context)
+        load_case = _build_state_b_load_case(context.sample.sample_id)
+        selector_hints = _build_state_b_selector_hints(context.sample.sample_id)
+        revision_result = revise_code_for_fea(
+            original_prompt=original_prompt,
+            original_code=original_code,
+            load_case=load_case,
+            selector_hints=selector_hints,
+            config=context.config,
+        )
         context.load_case = load_case
-        context.fea_ready_prompt = fea_prompt
+        context.selector_hints = selector_hints
+        context.fea_ready_prompt = _read_text(revision_result.prompt_path)
+        context.fea_revision_code = _read_text(revision_result.code_path)
         artifact_paths = {
-            "load_case_path": str(load_case_path),
-            "fea_ready_prompt_path": str(fea_prompt_path),
+            "load_case_path": str(revision_result.load_case_path),
+            "selector_hints_path": str(revision_result.selector_hints_path),
+            "fea_revision_prompt_path": str(revision_result.prompt_path),
+            "fea_revision_code_path": str(revision_result.code_path),
+            "fea_revision_change_log_path": str(revision_result.change_log_path),
+            "fea_revision_provenance_path": str(revision_result.provenance_path),
         }
         context.artifact_paths.update(artifact_paths)
         logger.info(
-            "build_fea_ready_prompt_stage | done | sample_id=%s | load_case_path=%s",
+            "build_fea_ready_prompt_stage | done | sample_id=%s | prompt_path=%s | code_path=%s",
             context.sample.sample_id,
-            load_case_path,
+            revision_result.prompt_path,
+            revision_result.code_path,
         )
         return artifact_paths
     except Exception:
@@ -285,7 +301,7 @@ def build_fea_ready_prompt_stage(context: PipelineContext) -> dict[str, str]:
 
 
 def generate_fea_ready_code_stage(context: PipelineContext) -> dict[str, str]:
-    """Generate and persist the FEA-ready CadQuery code."""
+    """Load the State B CadQuery code artifact into memory."""
 
     logger.info(
         "generate_fea_ready_code_stage | start | sample_id=%s | output_dir=%s",
@@ -294,17 +310,17 @@ def generate_fea_ready_code_stage(context: PipelineContext) -> dict[str, str]:
     )
     try:
         if not context.fea_ready_prompt:
-            prompt_path = context.fea_ready_dir / "fea_ready_prompt.txt"
-            context.fea_ready_prompt = _read_text(prompt_path)
-        fea_config = replace(context.config, output_root=context.sample_output_dir)
-        code = generate_fea_ready_code(context.fea_ready_prompt, fea_config)
-        context.fea_ready_code = code
-        result = {"fea_ready_code_path": str(context.fea_ready_dir / "fea_ready_code.py")}
+            context.fea_ready_prompt = _ensure_fea_prompt(context)
+        code_path = context.fea_ready_dir / "fea_revision_code.py"
+        if not code_path.exists():
+            raise FileNotFoundError(f"State B code not found: {code_path}")
+        context.fea_revision_code = _read_text(code_path)
+        result = {"fea_revision_code_path": str(code_path)}
         context.artifact_paths.update(result)
         logger.info(
             "generate_fea_ready_code_stage | done | sample_id=%s | line_count=%d",
             context.sample.sample_id,
-            len(code.splitlines()),
+            len(context.fea_revision_code.splitlines()),
         )
         return result
     except Exception:
@@ -317,7 +333,7 @@ def generate_fea_ready_code_stage(context: PipelineContext) -> dict[str, str]:
 
 
 def execute_fea_ready_stage(context: PipelineContext) -> dict[str, str]:
-    """Execute the FEA-ready CadQuery code and export STEP/STL artifacts."""
+    """Execute the State B CadQuery code and export STEP/STL artifacts."""
 
     logger.info(
         "execute_fea_ready_stage | start | sample_id=%s | output_dir=%s",
@@ -325,12 +341,12 @@ def execute_fea_ready_stage(context: PipelineContext) -> dict[str, str]:
         context.fea_ready_dir,
     )
     try:
-        code = _require_code(context.fea_ready_code, context.fea_ready_dir / "fea_ready_code.py")
-        result = execute_and_export_fea_ready_cadquery(code, output_dir=context.fea_ready_dir, force=context.config.force)
+        code = _require_code(context.fea_revision_code, context.fea_ready_dir / "fea_revision_code.py")
+        result = execute_and_export_fea_revision_cadquery(code, output_dir=context.fea_ready_dir, force=context.config.force)
         artifact_paths = {
-            "fea_ready_step_path": str(context.fea_ready_dir / "fea_ready.step"),
-            "fea_ready_stl_path": str(context.fea_ready_dir / "fea_ready.stl"),
-            "fea_ready_execution_log_path": str(context.fea_ready_dir / "execution_log.txt"),
+            "fea_revision_step_path": str(context.fea_ready_dir / "fea_revision.step"),
+            "fea_revision_stl_path": str(context.fea_ready_dir / "fea_revision.stl"),
+            "fea_revision_execution_log_path": str(context.fea_ready_dir / "execution_log.txt"),
         }
         context.artifact_paths.update(artifact_paths)
         logger.info(
@@ -350,7 +366,7 @@ def execute_fea_ready_stage(context: PipelineContext) -> dict[str, str]:
 
 
 def render_fea_ready_stage(context: PipelineContext) -> dict[str, str]:
-    """Render the standard FEA-ready geometry views."""
+    """Render the State B geometry views and support/load annotation."""
 
     logger.info(
         "render_fea_ready_stage | start | sample_id=%s | output_dir=%s",
@@ -358,15 +374,24 @@ def render_fea_ready_stage(context: PipelineContext) -> dict[str, str]:
         context.fea_ready_dir,
     )
     try:
-        stl_path = context.fea_ready_dir / "fea_ready.stl"
+        stl_path = context.fea_ready_dir / "fea_revision.stl"
         views_dir = context.fea_ready_dir / "views"
         result = render_views(stl_path, views_dir, force=context.config.force)
-        artifact_paths = {f"fea_ready_view_{name}_path": path for name, path in result.items()}
+        if context.selector_hints is None:
+            context.selector_hints = _load_selector_hints(context.fea_ready_dir / "selector_hints.json")
+        annotated_path = render_support_load_annotation(
+            stl_path,
+            views_dir / "annotated_support_load.png",
+            context.selector_hints,
+            force=context.config.force,
+        )
+        artifact_paths = {f"fea_revision_view_{name}_path": path for name, path in result.items()}
+        artifact_paths["fea_revision_view_annotated_support_load_path"] = str(annotated_path)
         context.artifact_paths.update(artifact_paths)
         logger.info(
             "render_fea_ready_stage | done | sample_id=%s | views=%s",
             context.sample.sample_id,
-            sorted(result.keys()),
+            sorted(result.keys()) + ["annotated_support_load"],
         )
         return artifact_paths
     except Exception:
@@ -476,8 +501,8 @@ def build_manual_fea_stage(context: PipelineContext) -> dict[str, str]:
         raise
 
 
-def build_post_fea_stage(context: PipelineContext) -> dict[str, str]:
-    """Write the post-FEA feedback prompt and comparison template."""
+def build_post_fea_stage(context: PipelineContext) -> dict[str, Any]:
+    """Gate State C on manual FEA evidence and generate the post-FEA revision."""
 
     logger.info(
         "build_post_fea_stage | start | sample_id=%s | output_dir=%s",
@@ -488,16 +513,79 @@ def build_post_fea_stage(context: PipelineContext) -> dict[str, str]:
         context.post_fea_dir.mkdir(parents=True, exist_ok=True)
         load_case = context.load_case or _load_load_case(context.fea_ready_dir / "load_case.json")
         context.load_case = load_case
-        result = write_post_fea_prompt(
-            sample_id=context.sample.sample_id,
+        manual_report_path = context.manual_dir / "fea_report.json"
+        screenshot_paths = required_manual_fea_evidence_paths(context.manual_dir)
+        try:
+            validation = validate_post_fea_inputs(manual_report_path, screenshot_paths)
+        except FileNotFoundError as exc:
+            logger.info(
+                "build_post_fea_stage | blocked | sample_id=%s | reason=%s",
+                context.sample.sample_id,
+                exc,
+            )
+            return {
+                "stage_status": "blocked",
+                "manual_report_path": str(manual_report_path),
+                "expected_screenshot_dir": str(context.manual_dir / "screenshots"),
+                "notes": [str(exc)],
+            }
+
+        if not validation["is_complete"]:
+            notes = [
+                f"missing_fields={validation['missing_fields']}",
+                f"missing_evidence_paths={validation['missing_evidence_paths']}",
+            ]
+            logger.info(
+                "build_post_fea_stage | blocked | sample_id=%s | notes=%s",
+                context.sample.sample_id,
+                notes,
+            )
+            return {
+                "stage_status": "blocked",
+                "manual_report_path": validation["manual_report_path"],
+                "expected_screenshot_dir": str(context.manual_dir / "screenshots"),
+                "notes": notes,
+            }
+
+        fea_revision_code_path = context.fea_ready_dir / "fea_revision_code.py"
+        fea_revision_code = _read_text(fea_revision_code_path)
+        fea_report = validation["report"]
+        revision_result = revise_code_after_fea(
+            fea_revision_code=fea_revision_code,
             load_case=load_case,
-            report_path=context.manual_dir / "fea_report.json",
+            fea_report=fea_report,
+            screenshots=screenshot_paths,
+            config=context.config,
+        )
+        execute_result = execute_and_export_post_fea_revision_cadquery(
+            _read_text(revision_result.code_path),
             output_dir=context.post_fea_dir,
             force=context.config.force,
         )
+        views_dir = context.post_fea_dir / "views"
+        rendered_views = render_views(Path(execute_result["stl_path"]), views_dir, force=context.config.force)
+        final_result = replace(
+            revision_result,
+            step_path=Path(execute_result["step_path"]),
+            stl_path=Path(execute_result["stl_path"]),
+            execution_log_path=context.post_fea_dir / "execution_log.txt",
+            view_paths={name: Path(path) for name, path in rendered_views.items()},
+        )
         artifact_paths = {
-            "fea_feedback_prompt_path": result["fea_feedback_prompt_path"],
-            "comparison_after_fea_path": result["comparison_after_fea_path"],
+            "post_fea_prompt_path": str(final_result.prompt_path),
+            "post_fea_code_path": str(final_result.code_path),
+            "post_fea_change_log_path": str(final_result.change_log_path),
+            "post_fea_provenance_path": str(final_result.provenance_path),
+            "post_fea_step_path": str(final_result.step_path),
+            "post_fea_stl_path": str(final_result.stl_path),
+            "post_fea_execution_log_path": str(final_result.execution_log_path),
+            "post_fea_view_front_path": str(final_result.view_paths["front"]),
+            "post_fea_view_side_path": str(final_result.view_paths["side"]),
+            "post_fea_view_top_path": str(final_result.view_paths["top"]),
+            "post_fea_view_iso_path": str(final_result.view_paths["iso"]),
+            "post_fea_view_grid_path": str(final_result.view_paths["grid"]),
+            "post_fea_load_case_path": str(final_result.load_case_path),
+            "post_fea_manual_report_path": str(final_result.manual_report_path),
         }
         context.artifact_paths.update(artifact_paths)
         logger.info(
@@ -505,7 +593,7 @@ def build_post_fea_stage(context: PipelineContext) -> dict[str, str]:
             context.sample.sample_id,
             context.post_fea_dir,
         )
-        return artifact_paths
+        return {"stage_status": "passed", **artifact_paths}
     except Exception:
         logger.exception(
             "build_post_fea_stage | failed | sample_id=%s | output_dir=%s",
@@ -545,7 +633,10 @@ def run_full_pipeline(config: PipelineConfig, selection: dict) -> PipelineSummar
         _record_stage(context, STAGE_RENDER_FEA_READY, "passed", render_fea_ready_stage(context))
         _record_stage(context, STAGE_BUILD_COMPARISON, "passed", build_comparison_stage(context))
         _record_stage(context, STAGE_BUILD_MANUAL_FEA, "passed", build_manual_fea_stage(context))
-        _record_stage(context, STAGE_BUILD_POST_FEA, "passed", build_post_fea_stage(context))
+        post_fea_result = build_post_fea_stage(context)
+        post_fea_notes = post_fea_result.pop("notes", None)
+        post_fea_status = str(post_fea_result.pop("stage_status", "passed"))
+        _record_stage(context, STAGE_BUILD_POST_FEA, post_fea_status, post_fea_result, notes=post_fea_notes)
         finalize_run_manifest(context.manifest_path)
         context.artifact_paths["run_manifest_path"] = str(context.manifest_path)
         _record_stage(context, STAGE_WRITE_MANIFEST, "passed", {"run_manifest_path": str(context.manifest_path)})
@@ -578,18 +669,20 @@ def _record_stage(
     context: PipelineContext,
     stage_name: str,
     status: str,
-    artifact_paths: Mapping[str, str] | None = None,
+    artifact_paths: Mapping[str, Any] | None = None,
+    notes: list[str] | None = None,
 ) -> None:
     """Update the in-memory and on-disk manifest for one stage."""
 
     context.stage_statuses[stage_name] = status
     if artifact_paths:
-        context.artifact_paths.update(dict(artifact_paths))
+        context.artifact_paths.update({key: str(value) for key, value in dict(artifact_paths).items()})
     update_run_manifest(
         context.manifest_path,
         stage_name=stage_name,
         status=status,
-        artifact_paths=artifact_paths,
+        artifact_paths={key: str(value) for key, value in dict(artifact_paths or {}).items()},
+        notes=notes,
     )
 
 
@@ -746,19 +839,112 @@ def _ensure_original_prompt(context: PipelineContext) -> str:
     return context.original_prompt
 
 
+def _ensure_original_code(context: PipelineContext) -> str:
+    """Return the original DB CadQuery code from memory or disk."""
+
+    if context.original_code:
+        return context.original_code
+    code_path = context.original_dir / "database_original_code.py"
+    if code_path.exists():
+        context.original_code = _read_text(code_path)
+        return context.original_code
+    if context.sample.ground_truth_code:
+        context.original_code = context.sample.ground_truth_code
+        return context.original_code
+    raise FileNotFoundError(f"Original DB code not found: {code_path}")
+
+
 def _ensure_fea_prompt(context: PipelineContext) -> str:
-    """Return the FEA-ready prompt text from memory or disk."""
+    """Return the State B revision prompt text from memory or disk."""
 
     if context.fea_ready_prompt:
         return context.fea_ready_prompt
-    prompt_path = context.fea_ready_dir / "fea_ready_prompt.txt"
-    if prompt_path.exists():
-        context.fea_ready_prompt = _read_text(prompt_path)
-        return context.fea_ready_prompt
+    for filename in ("fea_revision_prompt.txt", "fea_ready_prompt.txt"):
+        prompt_path = context.fea_ready_dir / filename
+        if prompt_path.exists():
+            context.fea_ready_prompt = _read_text(prompt_path)
+            return context.fea_ready_prompt
     if context.load_case is None:
         context.load_case = _load_load_case(context.fea_ready_dir / "load_case.json")
-    context.fea_ready_prompt = build_fea_prompt(context.sample, context.load_case)
+    if context.selector_hints is None:
+        context.selector_hints = _load_selector_hints(context.fea_ready_dir / "selector_hints.json")
+    context.fea_ready_prompt = build_fea_prompt(
+        _ensure_original_prompt(context),
+        _ensure_original_code(context),
+        context.load_case,
+        context.selector_hints,
+    )
     return context.fea_ready_prompt
+
+
+def _build_state_b_load_case(sample_id: str) -> LoadCase:
+    """Build the canonical State B load case defaults."""
+
+    return LoadCase(
+        sample_id=sample_id,
+        units="mm",
+        material={
+            "name": "Aluminum 6061-T6",
+            "youngs_modulus_pa": 68_900_000_000,
+            "poissons_ratio": 0.33,
+            "yield_strength_pa": 276_000_000,
+        },
+        boundary_conditions=[
+            {
+                "id": "fixed_region",
+                "type": "fixed_displacement",
+                "description": "wall-facing mounting plate face",
+                "selector": None,
+            }
+        ],
+        loads=[
+            {
+                "id": "load_region",
+                "type": "force",
+                "magnitude_n": 200,
+                "direction": [0, 0, -1],
+                "description": "top face near free end",
+                "selector": None,
+            }
+        ],
+        requirements={
+            "max_displacement_mm": 1.0,
+            "required_safety_factor": 2.0,
+            "max_von_mises_pa": 138_000_000,
+        },
+    )
+
+
+def _build_state_b_selector_hints(sample_id: str) -> SelectorHints:
+    """Build the canonical State B selector hints defaults."""
+
+    return SelectorHints(
+        sample_id=sample_id,
+        fixed_region_description="wall-facing mounting plate face",
+        load_region_description="top face near free end",
+        fixed_region_selector={"axis": "x", "side": "minimum"},
+        load_region_selector={"axis": "x", "side": "maximum"},
+        notes=[
+            "Confirm the fixed region before running FreeCAD FEM.",
+            "Confirm the load region before running FreeCAD FEM.",
+        ],
+    )
+
+
+def _load_selector_hints(selector_hints_path: Path) -> SelectorHints:
+    """Load selector hints JSON into the dataclass form."""
+
+    if not selector_hints_path.exists():
+        raise FileNotFoundError(f"Selector hints file not found: {selector_hints_path}")
+    raw = json.loads(selector_hints_path.read_text(encoding="utf-8"))
+    return SelectorHints(
+        sample_id=str(raw["sample_id"]),
+        fixed_region_description=str(raw["fixed_region_description"]),
+        load_region_description=str(raw["load_region_description"]),
+        fixed_region_selector=dict(raw["fixed_region_selector"]),
+        load_region_selector=dict(raw["load_region_selector"]),
+        notes=list(raw.get("notes", [])),
+    )
 
 
 def _load_load_case(load_case_path: Path) -> LoadCase:

@@ -119,7 +119,7 @@ def test_load_sample_by_id_prefers_expert_prompt(monkeypatch: pytest.MonkeyPatch
     assert sample.prompt == "Design a bracket."
     assert sample.prompt_variant == "expert"
     assert sample.source == "cadcodeverify-db"
-    assert sample.ground_truth_code is None
+    assert sample.ground_truth_code == "print('gt')"
     assert sample.metadata["ground_truth_code"] == "print('gt')"
     assert sample.metadata["selection_mode"] == "sample_id"
     assert len(calls) == 1
@@ -134,7 +134,7 @@ def test_load_random_sample_uses_non_expert_prompt_when_needed(monkeypatch: pyte
                 "sample_id": "sample-002",
                 "expert_prompt": None,
                 "non_expert_prompt": "Design a shelf support.",
-                "ground_truth_code": None,
+                "ground_truth_code": "print('gt 2')",
             }
         ]
     )
@@ -147,6 +147,7 @@ def test_load_random_sample_uses_non_expert_prompt_when_needed(monkeypatch: pyte
     assert sample.prompt == "Design a shelf support."
     assert sample.prompt_variant == "non_expert"
     assert sample.metadata["selection_mode"] == "random"
+    assert sample.ground_truth_code == "print('gt 2')"
     assert sample.metadata["prompt_variant"] == "non_expert"
 
 
@@ -160,7 +161,7 @@ def test_load_expert_random_sample_uses_fea_terms(monkeypatch: pytest.MonkeyPatc
                 "sample_id": "sample-003",
                 "expert_prompt": "Design a bracket with a 200 N load.",
                 "non_expert_prompt": None,
-                "ground_truth_code": None,
+                "ground_truth_code": "print('gt 3')",
             }
         ]
     )
@@ -176,8 +177,29 @@ def test_load_expert_random_sample_uses_fea_terms(monkeypatch: pytest.MonkeyPatc
     assert sample.sample_id == "sample-003"
     assert sample.prompt_variant == "expert"
     assert sample.metadata["selection_mode"] == "expert_random"
+    assert sample.ground_truth_code == "print('gt 3')"
     assert "bracket" in queries[0].lower()
     assert "expert_prompt" in queries[0]
+
+
+def test_load_sample_rejects_missing_ground_truth_code(monkeypatch: pytest.MonkeyPatch) -> None:
+    """load_sample_by_id raises LookupError when the original CAD code is missing."""
+
+    frame = pd.DataFrame(
+        [
+            {
+                "sample_id": "sample-004",
+                "expert_prompt": "Design a bracket.",
+                "non_expert_prompt": None,
+                "ground_truth_code": None,
+            }
+        ]
+    )
+
+    monkeypatch.setattr("src.db.load_sample.read_sql_dataframe", lambda *args, **kwargs: frame)
+
+    with pytest.raises(LookupError, match="does not contain original CAD code"):
+        load_sample_by_id("postgresql://example/db", "sample-004")
 
 
 def test_load_sample_rejects_conflicting_selection_flags() -> None:

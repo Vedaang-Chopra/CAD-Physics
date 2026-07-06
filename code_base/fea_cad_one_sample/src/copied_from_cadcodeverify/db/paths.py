@@ -2,7 +2,6 @@
 """Path resolution utilities for the code_base directory."""
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 from typing import Optional
 
@@ -29,19 +28,10 @@ def resolve_code_base(start_path: Optional[Path] = None) -> Path:
     search_roots = [start, *start.parents]
 
     for candidate in search_roots:
-        if candidate.name == "code_base" and (candidate / "cad_code_generation").exists():
+        if candidate.name == "code_base" and (candidate / "src").exists():
             return candidate
         nested_code_base = candidate / "code_base"
-        if nested_code_base.exists() and (nested_code_base / "cad_code_generation").exists():
+        if nested_code_base.exists() and (nested_code_base / "src").exists():
             return nested_code_base
 
     raise RuntimeError("Could not locate code_base from the current working directory.")
-
-
-def ensure_code_base_on_path(start_path: Optional[Path] = None) -> Path:
-    """Resolve ``code_base`` and prepend it to ``sys.path`` if needed."""
-    code_base = resolve_code_base(start_path=start_path)
-    code_base_str = str(code_base)
-    if code_base_str not in sys.path:
-        sys.path.insert(0, code_base_str)
-    return code_base

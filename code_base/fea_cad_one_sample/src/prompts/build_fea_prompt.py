@@ -1,117 +1,100 @@
-"""Build the FEA-ready prompt for a single CAD sample."""
+"""Build the State B FEA-constrained revision prompt for a single CAD sample."""
 
 from __future__ import annotations
 
+import json
 import logging
-from typing import Any
+from dataclasses import asdict
 
 from src.prompts.prompt_templates import (
+    FEA_PROMPT_CHANGE_LOG_INSTRUCTIONS,
     FEA_PROMPT_CORE_INSTRUCTIONS,
     FEA_PROMPT_HEADER,
     FEA_PROMPT_REQUIREMENT_LABELS,
     FEA_PROMPT_REQUIREMENT_TEXT,
 )
-from src.schemas.fea import LoadCase
-from src.schemas.sample import CADSample
+from src.schemas.fea import LoadCase, SelectorHints
 
 logger = logging.getLogger(__name__)
 
 
-def build_fea_prompt(sample: CADSample, load_case: LoadCase) -> str:
-    """Build an FEA-ready prompt from a CAD sample and load case."""
+def build_fea_prompt(
+    original_prompt: str,
+    original_code: str,
+    load_case: LoadCase,
+    selector_hints: SelectorHints,
+) -> str:
+    """Build a State B revision prompt from State A artifacts and FEA hints."""
 
     logger.info(
-        "build_fea_prompt | start | sample_id=%s | prompt_variant=%s",
-        sample.sample_id,
-        sample.prompt_variant,
+        "build_fea_prompt | start | sample_id=%s | prompt_length=%d | code_length=%d | load_case_keys=%s | selector_hint_keys=%s",
+        load_case.sample_id,
+        len(original_prompt or ""),
+        len(original_code or ""),
+        sorted(asdict(load_case).keys()),
+        sorted(asdict(selector_hints).keys()),
     )
     try:
-        prompt = _render_prompt(sample, load_case)
+        prompt = _render_prompt(original_prompt, original_code, load_case, selector_hints)
         logger.info(
             "build_fea_prompt | done | sample_id=%s | line_count=%d",
-            sample.sample_id,
+            load_case.sample_id,
             len(prompt.splitlines()),
         )
         return prompt
     except Exception:
         logger.exception(
-            "build_fea_prompt | failed | sample_id=%s | prompt_variant=%s",
-            sample.sample_id,
-            sample.prompt_variant,
+            "build_fea_prompt | failed | sample_id=%s | prompt_length=%d | code_length=%d",
+            load_case.sample_id,
+            len(original_prompt or ""),
+            len(original_code or ""),
         )
         raise
 
 
-def _render_prompt(sample: CADSample, load_case: LoadCase) -> str:
-    """Render the prompt body using the sample prompt and load-case defaults."""
+def _render_prompt(
+    original_prompt: str,
+    original_code: str,
+    load_case: LoadCase,
+    selector_hints: SelectorHints,
+) -> str:
+    """Render the revision prompt body from State A and State B inputs."""
 
-    material = load_case.material
-    requirements = load_case.requirements
-    fixed_support_region = _format_region(load_case.boundary_conditions, "fixed/support region")
-    load_region = _format_region(load_case.loads, "load region")
-    force_description = _format_force(load_case.loads)
-    direction_description = _format_direction(load_case.loads)
+    prompt_text = _require_text(original_prompt, "original_prompt")
+    code_text = _require_text(original_code, "original_code")
+    load_case_json = json.dumps(asdict(load_case), indent=2, sort_keys=True)
+    selector_hints_json = json.dumps(asdict(selector_hints), indent=2, sort_keys=True)
 
     return (
         f"{FEA_PROMPT_HEADER}\n\n"
-        f"Original design prompt:\n{sample.prompt.strip()}\n\n"
-        f"Sample ID: {sample.sample_id}\n"
-        f"Prompt variant: {sample.prompt_variant}\n\n"
-        "FEA context:\n"
-        f"- material: {material.get('name', 'Unknown material')}\n"
-        f"- Young's modulus: {material.get('youngs_modulus_pa')} Pa\n"
-        f"- Poisson's ratio: {material.get('poissons_ratio')}\n"
-        f"- yield strength: {material.get('yield_strength_pa')} Pa\n"
-        f"- fixed/support region: {fixed_support_region}\n"
-        f"- load region: {load_region}\n"
-        f"- force magnitude and direction: {force_description}; direction {direction_description}\n"
-        f"- max displacement: {requirements.get('max_displacement_mm')} mm\n"
-        f"- safety factor: {requirements.get('required_safety_factor')}\n"
-        f"- target max von Mises stress: {requirements.get('max_von_mises_pa')} Pa\n"
-        f"- meshability: {FEA_PROMPT_REQUIREMENT_TEXT[0]}\n"
-        f"- STEP export: {FEA_PROMPT_REQUIREMENT_TEXT[1]}\n"
-        f"- single connected solid: {FEA_PROMPT_REQUIREMENT_TEXT[2]}\n\n"
-        "Required prompt content checklist:\n"
+        "State A original prompt:\n"
+        f"{prompt_text}\n\n"
+        "State A original DB code:\n"
+        "```python\n"
+        f"{code_text.rstrip()}\n"
+        "```\n\n"
+        "Load case (JSON):\n"
+        f"{load_case_json}\n\n"
+        "Selector hints (JSON):\n"
+        f"{selector_hints_json}\n\n"
+        "Required content checklist:\n"
         + "\n".join(f"- {item}" for item in FEA_PROMPT_REQUIREMENT_LABELS)
         + "\n\n"
-        "Instructions:\n"
-        + "\n".join(FEA_PROMPT_CORE_INSTRUCTIONS)
+        "State B revision instructions:\n"
+        + "\n".join(f"- {item}" for item in FEA_PROMPT_CORE_INSTRUCTIONS)
         + "\n\n"
-        "Return only CadQuery Python code."
+        "Machine-readable change-log instructions:\n"
+        + "\n".join(f"- {item}" for item in FEA_PROMPT_CHANGE_LOG_INSTRUCTIONS)
+        + "\n\n"
+        "Additional output requirements:\n"
+        + "\n".join(f"- {item}" for item in FEA_PROMPT_REQUIREMENT_TEXT)
     )
 
 
-def _format_region(items: list[dict[str, Any]], label: str) -> str:
-    """Format a boundary-condition or load region description."""
+def _require_text(value: str, label: str) -> str:
+    """Return a stripped string or raise a clear validation error."""
 
-    if not items:
-        return f"Unspecified {label}"
-
-    first_item = items[0]
-    description = str(first_item.get("description") or f"Unspecified {label}").strip()
-    selector = first_item.get("selector")
-    if selector is None:
-        return f"{description} (selector: null)"
-    return f"{description} (selector: {selector})"
-
-
-def _format_force(loads: list[dict[str, Any]]) -> str:
-    """Format the force magnitude summary for the first force load."""
-
-    if not loads:
-        return "0 N"
-
-    first_load = loads[0]
-    magnitude = first_load.get("magnitude_n")
-    return f"{magnitude} N"
-
-
-def _format_direction(loads: list[dict[str, Any]]) -> str:
-    """Format the force direction for the first load."""
-
-    if not loads:
-        return "[]"
-
-    first_load = loads[0]
-    direction = first_load.get("direction")
-    return str(direction)
+    text = (value or "").strip()
+    if not text:
+        raise ValueError(f"{label} is required for State B prompt construction.")
+    return text

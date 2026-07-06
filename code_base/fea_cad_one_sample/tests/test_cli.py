@@ -98,6 +98,176 @@ def test_inspect_schema_cli_rejects_sample_selection_flags(
     assert "does not accept sample-selection flags" in output.err
 
 
+def test_state_a_cli_passes_force_through(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """state-a forwards sample selection and --force to the Stage A runner."""
+
+    captured: dict[str, object] = {}
+
+    def fake_runner(config_name: str, sample_id: str | None, random: bool, expert_random: bool, force: bool) -> dict[str, str]:
+        captured["config_name"] = config_name
+        captured["sample_id"] = sample_id
+        captured["random"] = random
+        captured["expert_random"] = expert_random
+        captured["force"] = force
+        return {"original_prompt_path": "/tmp/original_prompt.txt"}
+
+    monkeypatch.setattr("src.main.runners.state_a_only_runner", fake_runner)
+
+    exit_code = main([
+        "state-a",
+        "--config",
+        "config_gpt_5_4_mini.yaml",
+        "--sample-id",
+        "sample-001",
+        "--force",
+    ])
+
+    assert exit_code == 0
+    assert captured["config_name"] == "config_gpt_5_4_mini.yaml"
+    assert captured["sample_id"] == "sample-001"
+    assert captured["random"] is False
+    assert captured["expert_random"] is False
+    assert captured["force"] is True
+
+
+def test_state_b_cli_passes_force_through(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """state-b forwards sample selection and --force to the Stage B runner."""
+
+    captured: dict[str, object] = {}
+
+    def fake_runner(config_name: str, sample_id: str | None, random: bool, expert_random: bool, force: bool) -> dict[str, str]:
+        captured["config_name"] = config_name
+        captured["sample_id"] = sample_id
+        captured["random"] = random
+        captured["expert_random"] = expert_random
+        captured["force"] = force
+        return {"fea_revision_prompt_path": "/tmp/fea_revision_prompt.txt"}
+
+    monkeypatch.setattr("src.main.runners.state_b_only_runner", fake_runner)
+
+    exit_code = main([
+        "state-b",
+        "--config",
+        "config_gpt_5_4_mini.yaml",
+        "--sample-id",
+        "sample-001",
+        "--force",
+    ])
+
+    assert exit_code == 0
+    assert captured["config_name"] == "config_gpt_5_4_mini.yaml"
+    assert captured["sample_id"] == "sample-001"
+    assert captured["random"] is False
+    assert captured["expert_random"] is False
+    assert captured["force"] is True
+
+
+def test_state_c_cli_passes_force_through(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """state-c forwards sample selection and --force to the Stage C runner."""
+
+    captured: dict[str, object] = {}
+
+    def fake_runner(config_name: str, sample_id: str | None, random: bool, expert_random: bool, force: bool) -> dict[str, str]:
+        captured["config_name"] = config_name
+        captured["sample_id"] = sample_id
+        captured["random"] = random
+        captured["expert_random"] = expert_random
+        captured["force"] = force
+        return {"stage_status": "blocked", "manual_report_path": "/tmp/fea_report.json"}
+
+    monkeypatch.setattr("src.main.runners.state_c_only_runner", fake_runner)
+
+    exit_code = main([
+        "state-c",
+        "--config",
+        "config_gpt_5_4_mini.yaml",
+        "--sample-id",
+        "sample-001",
+        "--force",
+    ])
+
+    assert exit_code == 0
+    assert captured["config_name"] == "config_gpt_5_4_mini.yaml"
+    assert captured["sample_id"] == "sample-001"
+    assert captured["random"] is False
+    assert captured["expert_random"] is False
+    assert captured["force"] is True
+
+
+def test_comparison_cli_passes_force_through(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """comparison forwards sample selection and --force to the comparison runner."""
+
+    captured: dict[str, object] = {}
+
+    def fake_runner(config_name: str, sample_id: str | None, random: bool, expert_random: bool, force: bool) -> dict[str, str]:
+        captured["config_name"] = config_name
+        captured["sample_id"] = sample_id
+        captured["random"] = random
+        captured["expert_random"] = expert_random
+        captured["force"] = force
+        return {"final_experiment_report_path": "/tmp/final_experiment_report.md"}
+
+    monkeypatch.setattr("src.main.runners.comparison_only_runner", fake_runner)
+
+    exit_code = main([
+        "comparison",
+        "--config",
+        "config_gpt_5_4_mini.yaml",
+        "--sample-id",
+        "sample-001",
+        "--force",
+    ])
+
+    assert exit_code == 0
+    assert captured["config_name"] == "config_gpt_5_4_mini.yaml"
+    assert captured["sample_id"] == "sample-001"
+    assert captured["random"] is False
+    assert captured["expert_random"] is False
+    assert captured["force"] is True
+
+
+def test_compare_cli_compatibility_alias_passes_force_through(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """compare remains a compatibility alias for comparison."""
+
+    captured: dict[str, object] = {}
+
+    def fake_runner(config_name: str, sample_id: str | None, random: bool, expert_random: bool, force: bool) -> dict[str, str]:
+        captured["config_name"] = config_name
+        captured["sample_id"] = sample_id
+        captured["random"] = random
+        captured["expert_random"] = expert_random
+        captured["force"] = force
+        return {"final_experiment_report_path": "/tmp/final_experiment_report.md"}
+
+    monkeypatch.setattr("src.main.runners.comparison_only_runner", fake_runner)
+
+    exit_code = main([
+        "compare",
+        "--config",
+        "config_gpt_5_4_mini.yaml",
+        "--sample-id",
+        "sample-001",
+        "--force",
+    ])
+
+    assert exit_code == 0
+    assert captured["config_name"] == "config_gpt_5_4_mini.yaml"
+    assert captured["sample_id"] == "sample-001"
+    assert captured["random"] is False
+    assert captured["expert_random"] is False
+    assert captured["force"] is True
+
+
 def test_build_freecad_instructions_cli_passes_force_through(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -164,9 +334,13 @@ def test_run_cli_rejects_conflicting_selection_flags(
 
 
 def test_cli_help_exits_zero(capsys: pytest.CaptureFixture[str]) -> None:
-    """--help exits cleanly."""
+    """--help exits cleanly and shows the new stage commands."""
 
     exit_code = main(["--help"])
     output = capsys.readouterr()
     assert exit_code == 0
     assert "One-sample CAD-to-FEA prototype CLI." in output.out
+    assert "state-a" in output.out
+    assert "state-b" in output.out
+    assert "state-c" in output.out
+    assert "comparison" in output.out

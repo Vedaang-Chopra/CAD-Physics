@@ -96,6 +96,31 @@ def test_append_run_failure_and_finalize_manifest(tmp_path: Path) -> None:
     assert finalized["failures"][0]["message"] == "parse error"
 
 
+def test_update_run_manifest_tracks_blocked_status(tmp_path: Path) -> None:
+    """update_run_manifest accepts the blocked state for manual-FEA gating."""
+
+    manifest_path = tmp_path / "run_manifest.json"
+    initialize_run_manifest(
+        manifest_path,
+        "sample-001",
+        "config_gpt_5_4_mini.yaml",
+        tmp_path / "outputs" / "sample_sample-001",
+    )
+
+    updated = update_run_manifest(
+        manifest_path,
+        stage_name="build_post_fea_artifacts",
+        status="blocked",
+        artifact_paths={"manual_report_path": "outputs/sample_sample-001/04_manual_freecad_fea/fea_report.json"},
+        notes=["missing screenshots"],
+    )
+
+    assert updated["stage_statuses"]["build_post_fea_artifacts"] == "blocked"
+    assert updated["artifact_paths"]["manual_report_path"] == "outputs/sample_sample-001/04_manual_freecad_fea/fea_report.json"
+    assert updated["failures"][0]["status"] == "blocked"
+    assert RUN_MANIFEST_ALLOWED_STATUSES == ("pending", "running", "passed", "failed", "blocked", "skipped")
+
+
 def test_update_run_manifest_rejects_invalid_status(tmp_path: Path) -> None:
     """update_run_manifest rejects statuses outside the allowed set."""
 
@@ -109,5 +134,3 @@ def test_update_run_manifest_rejects_invalid_status(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="Invalid run manifest status"):
         update_run_manifest(manifest_path, stage_name="render_views", status="done")
-
-    assert RUN_MANIFEST_ALLOWED_STATUSES == ("pending", "running", "passed", "failed", "skipped")

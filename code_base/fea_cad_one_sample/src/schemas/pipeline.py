@@ -14,6 +14,7 @@ RUN_MANIFEST_ALLOWED_STATUSES: tuple[str, ...] = (
     "running",
     "passed",
     "failed",
+    "blocked",
     "skipped",
 )
 
@@ -27,6 +28,43 @@ class PipelineSummary:
     stage_statuses: dict[str, str]
     artifact_paths: dict[str, str]
     failures: list[dict[str, Any]]
+
+
+@dataclass(slots=True)
+class FEARevisionResult:
+    """State B revision outputs and artifact paths."""
+
+    sample_id: str
+    prompt_path: Path
+    load_case_path: Path
+    selector_hints_path: Path
+    code_path: Path
+    change_log_path: Path
+    provenance_path: Path
+    step_path: Path
+    stl_path: Path
+    execution_log_path: Path
+    view_paths: dict[str, Path]
+    code_hash_sha256: str
+
+
+@dataclass(slots=True)
+class PostFEARevisionResult:
+    """State C post-FEA revision outputs and artifact paths."""
+
+    sample_id: str
+    prompt_path: Path
+    load_case_path: Path
+    manual_report_path: Path
+    screenshot_paths: list[Path]
+    code_path: Path
+    change_log_path: Path
+    provenance_path: Path
+    step_path: Path
+    stl_path: Path
+    execution_log_path: Path
+    view_paths: dict[str, Path]
+    code_hash_sha256: str
 
 
 @dataclass(slots=True)

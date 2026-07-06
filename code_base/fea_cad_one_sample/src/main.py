@@ -43,7 +43,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     subparsers = parser.add_subparsers(dest="command", required=True)
     subparsers.add_parser("inspect-schema", parents=[common], help="Inspect the configured database schema.")
-    subparsers.add_parser("run", parents=[common], help="Run the full one-sample pipeline.")
+    subparsers.add_parser("run", parents=[common], help="Compatibility alias for the full one-sample pipeline.")
+    subparsers.add_parser("state-a", parents=[common], help="Run the State A pipeline only.")
+    subparsers.add_parser("state-b", parents=[common], help="Run the State A/B pipeline only.")
+    subparsers.add_parser("state-c", parents=[common], help="Run the gated State C pipeline only.")
+    subparsers.add_parser("comparison", parents=[common], help="Build the comparison artifacts only.")
+    subparsers.add_parser("compare", parents=[common], help="Compatibility alias for comparison.")
     subparsers.add_parser("render-only", parents=[common], help="Render original and FEA-ready views only.")
     subparsers.add_parser("build-fea-prompt", parents=[common], help="Build the FEA-ready prompt only.")
     subparsers.add_parser(
@@ -51,7 +56,6 @@ def build_parser() -> argparse.ArgumentParser:
         parents=[common],
         help="Build the manual FreeCAD FEM instructions only.",
     )
-    subparsers.add_parser("compare", parents=[common], help="Build the comparison artifacts only.")
     return parser
 
 
@@ -95,6 +99,54 @@ def _dispatch(args: argparse.Namespace, *, force: bool) -> int:
             force,
         )
         _print_pipeline_summary(summary)
+        return 0
+
+    if args.command == "state-a":
+        _validate_exactly_one_selection(args, command="state-a")
+        result = runners.state_a_only_runner(
+            str(args.config),
+            getattr(args, "sample_id", None),
+            bool(getattr(args, "random", False)),
+            bool(getattr(args, "expert_random", False)),
+            force,
+        )
+        _print_mapping(result)
+        return 0
+
+    if args.command == "state-b":
+        _validate_exactly_one_selection(args, command="state-b")
+        result = runners.state_b_only_runner(
+            str(args.config),
+            getattr(args, "sample_id", None),
+            bool(getattr(args, "random", False)),
+            bool(getattr(args, "expert_random", False)),
+            force,
+        )
+        _print_mapping(result)
+        return 0
+
+    if args.command == "state-c":
+        _validate_exactly_one_selection(args, command="state-c")
+        result = runners.state_c_only_runner(
+            str(args.config),
+            getattr(args, "sample_id", None),
+            bool(getattr(args, "random", False)),
+            bool(getattr(args, "expert_random", False)),
+            force,
+        )
+        _print_mapping(result)
+        return 0
+
+    if args.command in {"comparison", "compare"}:
+        _validate_exactly_one_selection(args, command=args.command)
+        result = runners.comparison_only_runner(
+            str(args.config),
+            getattr(args, "sample_id", None),
+            bool(getattr(args, "random", False)),
+            bool(getattr(args, "expert_random", False)),
+            force,
+        )
+        _print_mapping(result)
         return 0
 
     if args.command == "render-only":
@@ -181,20 +233,21 @@ def _print_pipeline_summary(summary: Any) -> None:
     artifact_paths = dict(summary.artifact_paths)
     lines = [
         f"Sample ID: {summary.sample_id}",
-        f"Original prompt path: {artifact_paths.get('original_prompt_path', output_dir / '01_original' / 'original_prompt.txt')}",
-        f"Original CAD code path: {artifact_paths.get('original_code_path', output_dir / '01_original' / 'original_code.py')}",
-        f"Original STEP path: {artifact_paths.get('original_step_path', output_dir / '01_original' / 'original.step')}",
-        f"Original render folder: {output_dir / '01_original' / 'views'}",
+        f"State A prompt path: {artifact_paths.get('original_prompt_path', output_dir / '01_dataset_original' / 'original_prompt.txt')}",
+        f"State A DB code path: {artifact_paths.get('database_original_code_path', output_dir / '01_dataset_original' / 'database_original_code.py')}",
+        f"State A STEP path: {artifact_paths.get('original_step_path', output_dir / '01_dataset_original' / 'original.step')}",
+        f"State A render folder: {output_dir / '01_dataset_original' / 'views'}",
         "",
-        f"FEA-ready prompt path: {artifact_paths.get('fea_ready_prompt_path', output_dir / '02_fea_ready' / 'fea_ready_prompt.txt')}",
-        f"Load case JSON path: {artifact_paths.get('load_case_path', output_dir / '02_fea_ready' / 'load_case.json')}",
-        f"FEA-ready CAD code path: {artifact_paths.get('fea_ready_code_path', output_dir / '02_fea_ready' / 'fea_ready_code.py')}",
-        f"FEA-ready STEP path: {artifact_paths.get('fea_ready_step_path', output_dir / '02_fea_ready' / 'fea_ready.step')}",
-        f"FEA-ready render folder: {output_dir / '02_fea_ready' / 'views'}",
+        f"State B prompt path: {artifact_paths.get('fea_revision_prompt_path', output_dir / '02_fea_constrained_revision' / 'fea_revision_prompt.txt')}",
+        f"State B load case path: {artifact_paths.get('load_case_path', output_dir / '02_fea_constrained_revision' / 'load_case.json')}",
+        f"State B code path: {artifact_paths.get('fea_revision_code_path', output_dir / '02_fea_constrained_revision' / 'fea_revision_code.py')}",
+        f"State B STEP path: {artifact_paths.get('fea_revision_step_path', output_dir / '02_fea_constrained_revision' / 'fea_revision.step')}",
+        f"State B render folder: {output_dir / '02_fea_constrained_revision' / 'views'}",
         "",
-        f"Manual FreeCAD instructions: {artifact_paths.get('freecad_instructions_path', output_dir / '04_manual_freecad_fea' / 'freecad_instructions.md')}",
+        f"Manual FreeCAD instructions: {artifact_paths.get('freecad_instructions_path', output_dir / '04_manual_freecad_fea' / 'freecad_manual_instructions.md')}",
         f"Manual FEA report template: {artifact_paths.get('fea_report_template_path', output_dir / '04_manual_freecad_fea' / 'fea_report.json')}",
-        f"Comparison report path: {artifact_paths.get('comparison_after_fea_path', output_dir / '05_post_fea_refinement' / 'comparison_after_fea.md')}",
+        f"State C prompt path: {artifact_paths.get('post_fea_prompt_path', output_dir / '05_post_fea_revision' / 'post_fea_prompt.txt')}",
+        f"State C comparison/report path: {artifact_paths.get('comparison_report_path', output_dir / '03_comparison' / 'final_experiment_report.md')}",
         f"Run manifest path: {artifact_paths.get('run_manifest_path', output_dir / 'run_manifest.json')}",
     ]
     if summary.failures:

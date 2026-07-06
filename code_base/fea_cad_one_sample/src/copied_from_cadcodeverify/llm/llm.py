@@ -5,36 +5,11 @@ import mimetypes
 import re
 import time
 from dataclasses import dataclass
-from typing import Optional, Dict, Any, Generator, List, Union, Type
+from typing import Optional, Dict, Any, Generator, List, Union, Type, cast
 from pathlib import Path
 
-# Try importing libraries and set flags/variables if they are missing
-try:
-    import openai
-    from openai import OpenAI
-    HAS_OPENAI = True
-except ImportError:
-    HAS_OPENAI = False
-
-try:
-    from utils.config_loader import load_config as load_project_config
-except ImportError:
-    try:
-        from code_base.utils.config_loader import load_config as load_project_config
-    except ImportError:
-        load_project_config = None
-
-try:
-    from utils.observability import langfuse_observation, summary_metadata_from_text
-except ImportError:
-    try:
-        from code_base.utils.observability import langfuse_observation, summary_metadata_from_text
-    except ImportError:
-        langfuse_observation = None
-
-        def summary_metadata_from_text(*, text: Optional[str], limit: int = 1200) -> str:
-            value = "" if text is None else str(text)
-            return value[:limit].rstrip() + "... [truncated]" if len(value) > limit else value
+from src.copied_from_cadcodeverify.db.config_loader import load_config as load_project_config
+from src.copied_from_cadcodeverify.llm.observability import langfuse_observation, summary_metadata_from_text
 
 _ENV_PLACEHOLDER_PATTERN = re.compile(r"^\$\{([A-Za-z_][A-Za-z0-9_]*)\}$")
 _API_ENV_PATH = Path(__file__).resolve().parents[2] / "api.env"
@@ -162,9 +137,11 @@ class LLMConnector:
         self.client = self._initialize_client()
 
     def _initialize_client(self):
-        if not HAS_OPENAI:
-                raise ImportError("OpenAI library is not installed. Please install it with `pip install openai`.")
-        
+        try:
+            from openai import OpenAI  # pyright: ignore[reportMissingImports]
+        except ImportError as exc:
+            raise ImportError("OpenAI library is not installed. Please install it with `pip install openai`.") from exc
+
         # Default base_url for Ollama if not provided
         if self.provider == "ollama" and not self.connection_string:
             self.connection_string = "http://localhost:11434/v1"
@@ -404,7 +381,7 @@ class LLMConnector:
         kwargs = self._normalize_chat_kwargs(kwargs)
         create_kwargs = dict(model=self.model, messages=messages, **kwargs)
         if response_format:
-            create_kwargs["response_format"] = response_format
+            create_kwargs["response_format"] = cast(Any, response_format)
         return create_kwargs
 
     def _normalize_chat_kwargs(self, kwargs: Dict[str, Any]) -> Dict[str, Any]:
@@ -464,7 +441,7 @@ class LLMConnector:
             "completion_window": completion_window,
         }
         if metadata:
-            kwargs["metadata"] = metadata
+            kwargs["metadata"] = cast(Any, metadata)
         return self.client.batches.create(**kwargs)
 
     def retrieve_batch(self, batch_id: str) -> Any:
@@ -476,7 +453,7 @@ class LLMConnector:
         file_response = self.client.files.content(file_id)
         if hasattr(file_response, "text"):
             text_value = file_response.text
-            return text_value() if callable(text_value) else text_value
+            return str(text_value() if callable(text_value) else text_value)
         if hasattr(file_response, "read"):
             content = file_response.read()
             if isinstance(content, bytes):
@@ -666,7 +643,7 @@ class LLMConnector:
         if system_instruction:
             messages.append({"role": "system", "content": system_instruction})
         
-        content = [{"type": "text", "text": prompt}]
+        content: list[dict[str, Any]] = [{"type": "text", "text": prompt}]
         
         if images:
             for img_path in images:
