@@ -65,6 +65,41 @@ Copy this block and fill it in. Add at the TOP of the Entries section.
 
 ## Entries
 
+## 4.1 — Archive Superseded Notebooks
+**Date:** 2026-07-05
+**Agent:** Pi
+**Model:** GPT-5
+**Status:** ✓ Complete
+
+**Approach taken:**
+Archived the superseded top-level notebooks and the old deterministic FEA replication series into `notebooks/archive/2026-07/`, then replaced the active `notebooks/fea_replication/README.md` with a pointer to the archive and the new five-notebook series.
+
+**What worked:**
+All superseded notebooks were copied into the archive tree and removed from the active notebook roots. The active top-level notebook directory now contains only the five new phase-3 notebooks.
+
+**What failed:**
+Nothing material.
+
+**Root cause:**
+N/A — archive migration succeeded.
+
+**Resolution:**
+Proceed to update the notebook contract tests and docs to reflect the new active notebook inventory.
+
+**Files modified:**
+- `code_base/fea_cad_one_sample/notebooks/archive/2026-07/README.md`
+- `code_base/fea_cad_one_sample/notebooks/fea_replication/README.md`
+- `docs/ai_context/AGENT_EXECUTION_LOG.md`
+
+**Verify result:**
+`find notebooks -maxdepth 1 -name '*.ipynb' -print | sort` → only the five new notebooks remain active; archived notebooks are present under `notebooks/archive/2026-07/`
+
+**Model fallback used:** no
+
+**DO NOT REPEAT:**
+- Do not leave superseded notebooks in the active root after the archive step.
+- Do not forget to replace `notebooks/fea_replication/README.md` with an archive pointer.
+
 ## 3.6 — Phase 3 Verify-Checkpoint
 **Date:** 2026-07-05
 **Agent:** Pi
