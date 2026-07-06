@@ -1,22 +1,147 @@
 # Session State
 
-**Last updated:** 2026-06-24  
+**Last updated:** 2026-07-05  
 **Agent:** Pi coding agent  
-**Feature:** One-sample CADCodeVerify to FEA-ready CAD  
-**Spec:** `docs/execution-plans/01-basic-sample-fea-confirmed-spec.md`  
-**Architecture:** `docs/execution-plans/02-basic-sample-fea-architecture.md`  
-**Tasks:** `docs/execution-plans/03-basic-sample-fea-pi-microtasks.md`  
-**Checkpoints:** `docs/execution-plans/04-basic-sample-fea-checkpoints.md`  
-**Sequential prompt:** `docs/execution-plans/06-pi-sequential-execution-prompt.md`  
+**Feature:** CAD-Physics remediation — DB original to FEA revision  
+**Spec:** `docs/remediation/02-corrected-experiment-spec.md`  
+**Architecture:** `docs/remediation/03-remediation-architecture.md`  
+**Tasks:** `docs/remediation/04-remediation-microtasks.md`  
+**Checkpoints:** `docs/remediation/05-remediation-checkpoints.md`  
+**Sequential prompt:** `docs/remediation/06-codex-to-coding-agent-prompt.md`  
+**Execution log:** `docs/ai_context/AGENT_EXECUTION_LOG.md`  
 **Documentation taxonomy:** `docs/ai_context/DOC_TAXONOMY.md`  
 
 ---
 
+## Notebook Series Phase 1
+
+- Task 1.1 verified that the five mirror scripts do not need a shared `src/notebook_series.py` helper.
+- Task 1.2 checkpoint verified the Phase 1 contract and the execution log is populated.
+- No notebook or output files were changed in Phase 1.
+- Next step: wait for human confirmation before beginning Phase 2.
+
+## Notebook Series Phase 2
+
+- Tasks 2.1 through 2.5 created the five mirrored CLI scripts under `notebooks/python_scripts/`.
+- Task 2.6 checkpoint passed: exactly five scripts are present and no `from src.` private imports were found.
+- Phase 2 is complete; wait for human confirmation before starting notebook rewrites in Phase 3.
+
+## Notebook Series Phase 3 (Partial)
+
+- Tasks 3.1 through 3.5 created the five thin notebooks: `00_sample_prompt_generation.ipynb` through `04_results_feedback.ipynb`.
+- The new notebooks use public `src.interfaces` imports and cleared outputs.
+- The Phase 3 checkpoint is currently blocked because `tests/test_notebook_contracts.py` still expects the old notebook inventory (`00_select_real_sample.ipynb` through `05_final_abc_comparison.ipynb`).
+- Next step: archive the superseded notebooks and update the contract tests in Phase 4, then rerun the checkpoint.
+
 ## Current Status
 
-**Phase:** 12 — Notebook And Documentation
-**Phase status:** Complete
-**Current task:** Notebook follow-up fix complete
+**Phase:** 8 — FEA-Ready CAD Generation
+**Phase status:** Completed
+**Current task:** Phase 8 checkpoint passed
+
+## FEA Replication Notebook Series
+
+- New standalone notebook series added under `notebooks/fea_replication/`.
+- New code lives in `src/fea_replication/` and is exposed through `src/interfaces.py`.
+- Default run artifacts are written to `outputs/fea_replication/baseline/`.
+- Notebooks 04 and 06 require `ccx` on `PATH`; stress parsing is best-effort and marked TODO when the `.dat` format is insufficient.
+
+## Phase 1 Result
+
+- [x] Task 1.1 — Create execution log.
+- [x] Task 1.2 — Update authority docs.
+- [x] Task 1.3 — Phase 1 checkpoint passed.
+- [x] Remediation package recognized in DOC_TAXONOMY.md.
+- [x] docs/ai_context/AGENT_EXECUTION_LOG.md created and seeded.
+- [x] docs/session_state.md retargeted to the remediation package.
+- [x] Phase 1 checkpoint passed.
+- [x] Next phase identified: Phase 2 — DB original-code loading and State A.
+
+## Current Phase 3 Progress
+
+- [x] Task 3.1 — Add revision schemas and selector hints.
+- [x] `SelectorHints` and `RevisionChangeLog` now live in `src/schemas/fea.py`.
+- [x] `FEARevisionResult` now lives in `src/schemas/pipeline.py`.
+- [x] `write_selector_hints(...)` now writes `selector_hints.json` alongside the load case.
+- [x] Phase 3 task 3.1 verify passed.
+- [x] Task 3.2 — Build the State B revision prompt.
+- [x] `build_fea_prompt(...)` now embeds the original prompt, original DB code, load case, selector hints, preserve-identity rules, permitted modifications, and machine-readable change-log instructions.
+- [x] Task 3.3 — Implement `revise_code_for_fea(...)`.
+- [x] State B artifacts now write `fea_revision_prompt.txt`, `load_case.json`, `selector_hints.json`, `fea_revision_code.py`, `fea_revision_change_log.json`, and `provenance.json` under `02_fea_constrained_revision/`.
+- [x] Task 3.4 — Execute and render State B through the pipeline.
+- [x] State B execution/render now writes `fea_revision.step`, `fea_revision.stl`, `execution_log.txt`, `views/front.png`, `views/side.png`, `views/top.png`, `views/iso.png`, `views/grid.png`, and `views/annotated_support_load.png`.
+- [x] Phase-3 notebook debug surface created: `notebooks/02_state_b_fea_revision.ipynb`.
+- [x] Phase 3 checkpoint passed.
+- [x] Phase 3 complete.
+- [ ] Task 4.1 — Add deterministic geometry metrics.
+
+## Phase 4 Result
+
+- [x] Task 4.1 — Add deterministic geometry metrics.
+- [x] Task 4.2 — Add three-state visual comparison.
+- [x] `state_abc_grid.png`, `geometry_metrics.json`, `geometry_metrics.md`, `prompt_and_code_diffs.md`, `change_log_summary.md`, and `final_experiment_report.md` now exist under `03_comparison/`.
+- [x] Phase 4 checkpoint passed.
+- [x] Phase 4 complete.
+- [ ] Next phase requires explicit approval: Phase 5 — Manual FEA Gate And State C.
+
+## Phase 5 Result
+
+- [x] Task 5.1 — Validate manual FEA completion.
+- [x] Task 5.2 — Implement `revise_code_after_fea(...)`.
+- [x] Task 5.3 — Execute/render State C and update the pipeline manifest.
+- [x] `post_fea_prompt.txt`, `post_fea_code.py`, `post_fea_change_log.json`, `provenance.json`, `post_fea.step`, `post_fea.stl`, `execution_log.txt`, and `views/front.png`, `views/side.png`, `views/top.png`, `views/iso.png`, `views/grid.png` are now handled under `05_post_fea_revision/`.
+- [x] The blocked State C path records `blocked` in the run manifest when manual evidence is incomplete.
+- [x] Phase 5 checkpoint passed.
+- [x] Phase 5 complete.
+- [x] Next phase identified: Phase 6 — Real Multi-Notebook Experiment Walkthrough.
+
+## Phase 6 Result
+
+- [x] Task 6.1 — Rewrite the notebook walkthrough around the real `outputs/sample_sample-001/` tree.
+- [x] Task 6.2 — Add notebook contract tests and verify the sample_box scan.
+- [x] `notebooks/00_select_real_sample.ipynb` through `notebooks/05_final_abc_comparison.ipynb` plus `notebooks/one_sample_fea_inspection.ipynb` now use public `src.interfaces` imports, cleared outputs, and canonical real artifact paths.
+- [x] `outputs/sample_sample-001/04_manual_freecad_fea/` now holds the manual FEA instruction/report template artifacts.
+- [x] `outputs/sample_sample-001/05_post_fea_revision/` now holds the blocked State C failure artifact.
+- [x] Notebook contract tests passed.
+- [x] Notebook sample_box scan passed.
+- [x] Phase 6 complete.
+- [ ] Next phase requires explicit approval: Phase 7 — CLI, compatibility cleanup, docs alignment, final acceptance.
+
+## Phase 7 Result
+
+- [x] Task 7.1 — Add explicit State A/B/C/comparison CLI commands while preserving compatibility aliases.
+- [x] Task 7.2 — Remove old CAD Design runtime import fallback paths from `src/`.
+- [x] Task 7.3 — Refresh README, codebase map, workflow map, notebook taxonomy, and execution log/session state.
+- [x] `src.main --help` now exposes `state-a`, `state-b`, `state-c`, and `comparison` alongside compatibility aliases.
+- [x] `rg -n "ensure_code_base_on_path|from utils\.llm|from code_base\.utils" src` returned no matches.
+- [x] `pytest tests -q`, `compileall .`, and `python -m src.main --help` all passed.
+- [x] Phase 7 checkpoint passed.
+- [x] Phase 7 complete.
+- [x] Phase 8 checkpoint passed.
+- [x] Phase 8 complete.
+
+## Phase 8 Result
+
+- [x] Task 8.1 — Implement FEA-ready generation wrapper.
+- [x] Task 8.2 — Reuse execution/export for FEA-ready geometry.
+- [x] `pytest tests/test_generate_fea_ready.py -q` passed.
+- [x] FEA-ready generation failure-path behavior remains non-destructive.
+- [x] Phase 8 complete.
+
+## Phase 2 Result
+
+- [x] Task 2.1 — Preserve DB original code in sample schema.
+- [x] Task 2.2 — Replace baseline generation with DB-original persistence.
+- [x] State A sample loading now retains `ground_truth_code` from the DB and rejects missing original CAD code.
+- [x] State A persistence now writes `original_prompt.txt`, `database_original_code.py`, `metadata.json`, and `provenance.json` under `01_dataset_original/`.
+- [x] Phase 2 task 2.1 verify passed.
+- [x] Phase 2 task 2.2 verify passed.
+- [x] Task 2.3 — Execute and render State A from DB code.
+- [x] Phase 2 checkpoint passed.
+- [x] State A artifacts exist under `outputs/sample_sample-001/01_dataset_original/`.
+- [x] Phase-2 notebook debug surface created: `notebooks/01_state_a_dataset_original.ipynb`.
+- [x] Legacy notebook updated to read DB sample code directly in `notebooks/one_sample_fea_inspection.ipynb`.
+- [x] Next phase identified: Phase 3 — State B FEA-constrained revision.
 
 ## Phase 12 Result
 
